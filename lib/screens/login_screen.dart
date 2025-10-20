@@ -27,9 +27,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Estrutura principal da tela
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -37,31 +39,31 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 30),
+                const SizedBox(height: 32),
 
                 // Logo centralizado
-                Center(child: _buildLogo()),
+                Center(child: _buildLogo(isDark)),
 
                 const SizedBox(height: 20),
 
                 // Texto de boas-vindas
-                const Text(
+                Text(
                   'Bem-vindo de volta,',
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: theme.textTheme.bodyMedium?.color,
                   ),
                 ),
 
                 const SizedBox(height: 8),
 
                 // Subtítulo explicativo
-                const Text(
+                Text(
                   'Descubra escolhas ilimitadas e conveniência\nsem igual.',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey,
+                    color: theme.hintColor.withValues(alpha: 0.7),
                     height: 1.4,
                   ),
                 ),
@@ -71,18 +73,21 @@ class _LoginScreenState extends State<LoginScreen> {
                 // Campo de E-Mail com estilo
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: theme.cardColor,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade300),
+                    border: Border.all(
+                      color: theme.dividerColor.withValues(alpha: 0.4),
+                    ),
                   ),
                   child: TextField(
                     controller: _emailController,
                     decoration: InputDecoration(
-                      hintText: 'E‑mail',
-                      hintStyle: TextStyle(color: Colors.grey.shade600),
+                      hintText: 'E-mail',
+                      hintStyle:
+                          TextStyle(color: theme.hintColor.withValues(alpha: 0.7)),
                       prefixIcon: Icon(
                         Icons.mail_outline,
-                        color: Colors.grey.shade600,
+                        color: theme.hintColor.withValues(alpha: 0.7),
                       ),
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(
@@ -99,29 +104,31 @@ class _LoginScreenState extends State<LoginScreen> {
                 // Campo de senha com botão para mostrar/ocultar
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: theme.cardColor,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade300),
+                    border: Border.all(
+                      color: theme.dividerColor.withValues(alpha: 0.4),
+                    ),
                   ),
                   child: TextField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     decoration: InputDecoration(
-                      hintText: 'Palavra‑passe',
-                      hintStyle: TextStyle(color: Colors.grey.shade600),
+                      hintText: 'Palavra-passe',
+                      hintStyle:
+                          TextStyle(color: theme.hintColor.withValues(alpha: 0.7)),
                       prefixIcon: Icon(
                         Icons.lock_outline,
-                        color: Colors.grey.shade600,
+                        color: theme.hintColor.withValues(alpha: 0.7),
                       ),
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscurePassword
                               ? Icons.visibility_off_outlined
                               : Icons.visibility_outlined,
-                          color: Colors.grey.shade600,
+                          color: theme.hintColor.withValues(alpha: 0.7),
                         ),
                         onPressed: () {
-                          // Alterna visibilidade da senha
                           setState(() {
                             _obscurePassword = !_obscurePassword;
                           });
@@ -138,7 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 12),
 
-                // Linha com "Lembrar-me" e "Esqueceu a palavra‑passe?"
+                // Linha com "Lembrar-me" e "Esqueceu a palavra-passe?"
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -150,7 +157,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: Checkbox(
                             value: _rememberMe,
                             onChanged: (value) {
-                              // Atualiza estado do checkbox
                               setState(() {
                                 _rememberMe = value ?? false;
                               });
@@ -162,20 +168,21 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Text(
-                          'Lembrar‑me',
-                          style: TextStyle(color: Colors.black87, fontSize: 14),
+                        Text(
+                          'Lembrar-me',
+                          style: TextStyle(
+                            color: theme.textTheme.bodyMedium?.color,
+                            fontSize: 14,
+                          ),
                         ),
                       ],
                     ),
                     TextButton(
-                      onPressed: () {
-                        // Ação ao esquecer a senha (placeholder)
-                      },
+                      onPressed: () {},
                       child: Text(
-                        'Esqueceu a palavra‑passe?',
+                        'Esqueceu a palavra-passe?',
                         style: TextStyle(
-                          color: Colors.grey.shade400,
+                          color: theme.hintColor.withValues(alpha: 0.7),
                           fontSize: 14,
                         ),
                       ),
@@ -190,9 +197,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: () {
-                      // Lógica de autenticação (placeholder)
-                    },
+                    onPressed: () {},
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.yellow.shade700,
                       shape: RoundedRectangleBorder(
@@ -213,7 +218,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 16),
 
-                // Botão para criar conta - navega para rota /register
+                // Botão para criar conta
                 SizedBox(
                   width: double.infinity,
                   height: 56,
@@ -222,17 +227,19 @@ class _LoginScreenState extends State<LoginScreen> {
                       Navigator.pushNamed(context, '/register');
                     },
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: Colors.grey.shade300),
+                      side: BorderSide(
+                        color: theme.dividerColor.withValues(alpha: 0.4),
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Criar Conta',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        color: theme.textTheme.bodyMedium?.color,
                       ),
                     ),
                   ),
@@ -243,39 +250,45 @@ class _LoginScreenState extends State<LoginScreen> {
                 // Separador "Ou entrar com"
                 Row(
                   children: [
-                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                    Expanded(
+                      child: Divider(
+                        color: theme.dividerColor.withValues(alpha: 0.4),
+                      ),
+                    ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
                         'Ou entrar com',
                         style: TextStyle(
-                          color: Colors.grey.shade400,
+                          color: theme.hintColor.withValues(alpha: 0.7),
                           fontSize: 13,
                         ),
                       ),
                     ),
-                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                    Expanded(
+                      child: Divider(
+                        color: theme.dividerColor.withValues(alpha: 0.4),
+                      ),
+                    ),
                   ],
                 ),
 
                 const SizedBox(height: 24),
 
-                // Botões de login social (Google / Facebook)
+                // Botões de login social
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     _buildSocialButton(
                       icon: Icons.g_mobiledata,
-                      onTap: () {
-                        // Login com Google (placeholder)
-                      },
+                      onTap: () {},
+                      borderColor: theme.dividerColor.withValues(alpha: 0.4),
                     ),
                     const SizedBox(width: 16),
                     _buildSocialButton(
                       icon: Icons.facebook,
-                      onTap: () {
-                        // Login com Facebook (placeholder)
-                      },
+                      onTap: () {},
+                      borderColor: theme.dividerColor.withValues(alpha: 0.4),
                     ),
                   ],
                 ),
@@ -289,41 +302,40 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
- // Constrói o logo com ajustes visuais
-Widget _buildLogo() {
-  return Center(
-    child: Container(
-      width: 110,
-      height: 110,
-      decoration: BoxDecoration(
-        color: Colors.white, // fundo (podes deixar transparente)
-        borderRadius: BorderRadius.circular(30), // arredondamento da imagem
+  // Logo adaptado para tema
+  Widget _buildLogo(bool isDark) {
+    return Center(
+      child: Container(
+        width: 110,
+        height: 110,
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(30),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Image.asset(
+          isDark ? 'lib/assets/logo_dark.png' : 'lib/assets/logo.png',
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              color: Colors.grey.shade100,
+              child: const Icon(
+                Icons.image_not_supported_outlined,
+                size: 40,
+                color: Colors.grey,
+              ),
+            );
+          },
+        ),
       ),
-      clipBehavior: Clip.antiAlias, // recorta imagem no formato da borda
-      child: Image.asset(
-        'lib/assets/logo.png',
-        fit: BoxFit.cover, // preenche o container
-        errorBuilder: (context, error, stackTrace) {
-          // caso a imagem falhe
-          return Container(
-            color: Colors.grey.shade100,
-            child: const Icon(
-              Icons.image_not_supported_outlined,
-              size: 40,
-              color: Colors.grey,
-            ),
-          );
-        },
-      ),
-    ),
-  );
-}
+    );
+  }
 
-
-  // Botão social genérico com ícone e ação
+  // Botão social genérico
   Widget _buildSocialButton({
     required IconData icon,
     required VoidCallback onTap,
+    required Color borderColor,
   }) {
     return InkWell(
       onTap: onTap,
@@ -331,7 +343,7 @@ Widget _buildLogo() {
         width: 56,
         height: 56,
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300),
+          border: Border.all(color: borderColor),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(
