@@ -107,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     decoration: InputDecoration(
-                      hintText: 'Password',
+                      hintText: 'Palavra-Passe',
                       hintStyle: TextStyle(color: Colors.grey.shade600),
                       prefixIcon: Icon(
                         Icons.lock_outline,
@@ -155,7 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 _rememberMe = value ?? false;
                               });
                             },
-                            activeColor: const Color(0xFF5B7FFF),
+                            activeColor: Colors.yellow.shade700,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(4),
                             ),
@@ -194,7 +194,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       // Lógica de autenticação (placeholder)
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF5B7FFF),
+                      backgroundColor: Colors.yellow.shade700,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
