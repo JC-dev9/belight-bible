@@ -83,8 +83,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _emailController,
                     decoration: InputDecoration(
                       hintText: 'E-mail',
-                      hintStyle:
-                          TextStyle(color: theme.hintColor.withValues(alpha: 0.7)),
+                      hintStyle: TextStyle(
+                        color: theme.hintColor.withValues(alpha: 0.7),
+                      ),
                       prefixIcon: Icon(
                         Icons.mail_outline,
                         color: theme.hintColor.withValues(alpha: 0.7),
@@ -115,8 +116,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     obscureText: _obscurePassword,
                     decoration: InputDecoration(
                       hintText: 'Palavra-passe',
-                      hintStyle:
-                          TextStyle(color: theme.hintColor.withValues(alpha: 0.7)),
+                      hintStyle: TextStyle(
+                        color: theme.hintColor.withValues(alpha: 0.7),
+                      ),
                       prefixIcon: Icon(
                         Icons.lock_outline,
                         color: theme.hintColor.withValues(alpha: 0.7),
@@ -178,7 +180,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                     TextButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/forgot-password');
+                      },
                       child: Text(
                         'Esqueceu a palavra-passe?',
                         style: TextStyle(

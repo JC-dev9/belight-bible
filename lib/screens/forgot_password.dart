@@ -1,27 +1,18 @@
 import 'package:flutter/material.dart';
 
-class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+class ForgotPasswordScreen extends StatefulWidget {
+  const ForgotPasswordScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
-  final _nameController = TextEditingController();
+class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-
-  bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
-    _nameController.dispose();
     _emailController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -50,7 +41,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 20),
 
               Text(
-                'Criar conta',
+                'Recuperar senha',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -59,7 +50,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Preencha os campos abaixo para começar sua jornada.',
+                'Digite o seu e-mail abaixo para receber instruções de recuperação.',
                 style: TextStyle(
                   fontSize: 14,
                   color: theme.hintColor.withValues(alpha: 0.7),
@@ -67,15 +58,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-
-              // Campo Nome
-              _buildTextField(
-                controller: _nameController,
-                hint: 'Nome',
-                icon: Icons.person_outline,
-                theme: theme,
-              ),
-              const SizedBox(height: 16),
 
               // Campo E-mail
               _buildTextField(
@@ -85,61 +67,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 theme: theme,
                 keyboardType: TextInputType.emailAddress,
               ),
-              const SizedBox(height: 16),
-
-              // Campo Senha
-              _buildTextField(
-                controller: _passwordController,
-                hint: 'Palavra-passe',
-                icon: Icons.lock_outline,
-                theme: theme,
-                obscureText: _obscurePassword,
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                    color: theme.hintColor.withValues(alpha: 0.7),
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Campo Confirmar Senha
-              _buildTextField(
-                controller: _confirmPasswordController,
-                hint: 'Confirmar palavra-passe',
-                icon: Icons.lock_outline,
-                theme: theme,
-                obscureText: _obscureConfirmPassword,
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscureConfirmPassword
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                    color: theme.hintColor.withValues(alpha: 0.7),
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _obscureConfirmPassword = !_obscureConfirmPassword;
-                    });
-                  },
-                ),
-              ),
               const SizedBox(height: 32),
 
-              // Botão Criar Conta
+              // Botão Enviar
               SizedBox(
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
                   onPressed: () {
-                    // TODO: adicionar lógica de registo
+                    // TODO: implementar lógica de envio de e-mail
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.yellow.shade700,
@@ -149,7 +85,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     elevation: 0,
                   ),
                   child: const Text(
-                    'Criar Conta',
+                    'Enviar instruções',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -158,7 +94,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 24),
 
               // Voltar para Login
@@ -166,10 +101,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'Já tem uma conta?',
-                    style: TextStyle(
-                      color: theme.hintColor.withValues(alpha: 0.7),
-                    ),
+                    'Lembrou sua senha?',
+                    style: TextStyle(color: theme.hintColor.withValues(alpha: 0.7)),
                   ),
                   TextButton(
                     onPressed: () {
