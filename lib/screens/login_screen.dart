@@ -37,7 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 60),
+                const SizedBox(height: 30),
 
                 // Logo centralizado
                 Center(child: _buildLogo()),
@@ -58,7 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // Subtítulo explicativo
                 const Text(
-                  'Discover Limitless Choices and Unmatched\nConvenience.',
+                  'Descubra escolhas ilimitadas e conveniência\nsem igual.',
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey,
@@ -78,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: TextField(
                     controller: _emailController,
                     decoration: InputDecoration(
-                      hintText: 'E-Mail',
+                      hintText: 'E‑mail',
                       hintStyle: TextStyle(color: Colors.grey.shade600),
                       prefixIcon: Icon(
                         Icons.mail_outline,
@@ -107,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     decoration: InputDecoration(
-                      hintText: 'Palavra-Passe',
+                      hintText: 'Palavra‑passe',
                       hintStyle: TextStyle(color: Colors.grey.shade600),
                       prefixIcon: Icon(
                         Icons.lock_outline,
@@ -138,7 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 12),
 
-                // Linha com "Remember Me" e "Forget Password"
+                // Linha com "Lembrar-me" e "Esqueceu a palavra‑passe?"
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -163,7 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(width: 8),
                         const Text(
-                          'Remember Me',
+                          'Lembrar‑me',
                           style: TextStyle(color: Colors.black87, fontSize: 14),
                         ),
                       ],
@@ -173,7 +173,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         // Ação ao esquecer a senha (placeholder)
                       },
                       child: Text(
-                        'Forget Password?',
+                        'Esqueceu a palavra‑passe?',
                         style: TextStyle(
                           color: Colors.grey.shade400,
                           fontSize: 14,
@@ -185,7 +185,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 24),
 
-                // Botão de Sign In
+                // Botão de Iniciar Sessão
                 SizedBox(
                   width: double.infinity,
                   height: 56,
@@ -201,7 +201,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       elevation: 0,
                     ),
                     child: const Text(
-                      'Sign In',
+                      'Iniciar Sessão',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -228,7 +228,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     child: const Text(
-                      'Create Account',
+                      'Criar Conta',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -240,14 +240,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 24),
 
-                // Separador "Or Sign in With"
+                // Separador "Ou entrar com"
                 Row(
                   children: [
                     Expanded(child: Divider(color: Colors.grey.shade300)),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
-                        'Or Sign in With',
+                        'Ou entrar com',
                         style: TextStyle(
                           color: Colors.grey.shade400,
                           fontSize: 13,
@@ -289,30 +289,36 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Constrói um logo simples usado no topo da tela (com fallback se o asset não for encontrado)
-  Widget _buildLogo() {
-    return Image.asset(
-      'assets/logo.png',
-      width: 80,
-      height: 80,
-      errorBuilder: (context, error, stackTrace) {
-        // fallback simples: ícone quando o asset não existir
-        return Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
+ // Constrói o logo com ajustes visuais
+Widget _buildLogo() {
+  return Center(
+    child: Container(
+      width: 110,
+      height: 110,
+      decoration: BoxDecoration(
+        color: Colors.white, // fundo (podes deixar transparente)
+        borderRadius: BorderRadius.circular(30), // arredondamento da imagem
+      ),
+      clipBehavior: Clip.antiAlias, // recorta imagem no formato da borda
+      child: Image.asset(
+        'lib/assets/logo.png',
+        fit: BoxFit.cover, // preenche o container
+        errorBuilder: (context, error, stackTrace) {
+          // caso a imagem falhe
+          return Container(
             color: Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(
-            Icons.image_not_supported_outlined,
-            size: 36,
-            color: Colors.grey,
-          ),
-        );
-      },
-    );
-  }
+            child: const Icon(
+              Icons.image_not_supported_outlined,
+              size: 40,
+              color: Colors.grey,
+            ),
+          );
+        },
+      ),
+    ),
+  );
+}
+
 
   // Botão social genérico com ícone e ação
   Widget _buildSocialButton({

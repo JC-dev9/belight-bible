@@ -21,4 +21,6 @@ flutter:
   uses-material-design: true
 
   assets:
-    - C:\Users\juanl\belightApp\bibleapp\lib\assets\logo.png
+    - lib/assets/logo.png
+
+
