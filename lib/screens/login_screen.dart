@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 
 // Tela de login principal (Stateful para gerenciar inputs)
 class LoginScreen extends StatefulWidget {
@@ -201,7 +203,42 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () async {
+                      final email = _emailController.text.trim();
+                      final password = _passwordController.text.trim();
+
+                      if (email.isEmpty || password.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Preencha todos os campos'),
+                          ),
+                        );
+                        return;
+                      }
+
+                      try {
+                        final response = await Supabase.instance.client.auth
+                            .signInWithPassword(
+                              email: email,
+                              password: password,
+                            );
+
+                        if (response.user != null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Login realizado com sucesso!'),
+                            ),
+                          );
+                          // Aqui você pode navegar para a tela principal do app
+                          Navigator.pushReplacementNamed(context, '/home');
+                        }
+                      } catch (error) {
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text('Erro: $error')));
+                      }
+                    },
+
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.yellow.shade700,
                       shape: RoundedRectangleBorder(
