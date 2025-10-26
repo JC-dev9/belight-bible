@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'home_screen.dart';
 
 // Tela de login principal (Stateful para gerenciar inputs)
 class LoginScreen extends StatefulWidget {
@@ -230,7 +231,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           );
                           // Aqui você pode navegar para a tela principal do app
-                          Navigator.pushReplacementNamed(context, '/home');
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const HomeScreen(),
+                            ),
+                          );
                         }
                       } catch (error) {
                         ScaffoldMessenger.of(
