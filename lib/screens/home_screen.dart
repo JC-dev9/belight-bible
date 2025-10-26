@@ -19,30 +19,43 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    // Definindo as cores para melhor clareza e reutilização
+    final Color primaryColor = Colors.yellow.shade700;
+    final Color unselectedItemColor = Theme.of(context).iconTheme.color ?? Colors.grey;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_currentIndex == 0 ? 'Bíblia' : 'Chatbot'),
-        backgroundColor: Colors.yellow.shade700,
-      ),
+      
       body: _screens[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        selectedItemColor: Colors.yellow.shade700,
-        unselectedItemColor: theme.iconTheme.color,
-        onTap: (index) {
+      
+      // 1. Substituição do BottomNavigationBar pelo NavigationBar (Material 3)
+      bottomNavigationBar: NavigationBar(
+        // Propriedades de controle e eventos
+        selectedIndex: _currentIndex,
+        onDestinationSelected: (index) {
           setState(() {
             _currentIndex = index;
           });
         },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.menu_book_outlined),
+        
+        // Propriedades de estilo
+        height: 80, // A altura padrão do M3, semelhante ao do vídeo
+        elevation: 0, // Remove a sombra
+        
+        // Define a cor do indicador em formato de pílula
+        indicatorColor: primaryColor.withOpacity(0.2), // Um amarelo claro para o fundo do item selecionado
+
+        // 2. Definição dos destinos (itens) da navegação
+        destinations: [
+          NavigationDestination(
+            // Ícone para o estado não selecionado
+            icon: Icon(Icons.menu_book_outlined, color: unselectedItemColor),
+            // Ícone para o estado selecionado (opcional, mas comum no M3)
+            selectedIcon: Icon(Icons.menu_book, color: primaryColor),
             label: 'Bíblia',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble_outline),
+          NavigationDestination(
+            icon: Icon(Icons.chat_bubble_outline, color: unselectedItemColor),
+            selectedIcon: Icon(Icons.chat_bubble, color: primaryColor),
             label: 'Chatbot',
           ),
         ],
