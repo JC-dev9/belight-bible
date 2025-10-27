@@ -2,6 +2,63 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
+// --- SIMULAÇÃO DA API DA BÍBLIA EM PORTUGUÊS ---
+// No mundo real, você usaria o pacote 'http' ou 'dio' para
+// fazer uma chamada REST para um serviço como Supabase, Firebase ou uma API de terceiros.
+
+class BibleApi {
+  // Dados de livros e capítulos (Bíblia completa)
+  static final Map<String, int> chaptersPerBook = {
+    'Gênesis': 50, 'Êxodo': 40, 'Levítico': 27, 'Números': 36, 'Deuteronômio': 34,
+    'Josué': 24, 'Juízes': 21, 'Rute': 4, '1 Samuel': 31, '2 Samuel': 24,
+    '1 Reis': 22, '2 Reis': 25, '1 Crônicas': 29, '2 Crônicas': 36, 'Esdras': 10,
+    'Neemias': 13, 'Ester': 10, 'Jó': 42, 'Salmos': 150, 'Provérbios': 31,
+    'Eclesiastes': 12, 'Cantares': 8, 'Isaías': 66, 'Jeremias': 52, 'Lamentações': 5,
+    'Ezequiel': 48, 'Daniel': 12, 'Oseias': 14, 'Joel': 3, 'Amós': 9,
+    'Obadias': 1, 'Jonas': 4, 'Miqueias': 7, 'Naum': 3, 'Habacuque': 3,
+    'Sofonias': 3, 'Ageu': 2, 'Zacarias': 14, 'Malaquias': 4,
+    // Novo Testamento
+    'Mateus': 28, 'Marcos': 16, 'Lucas': 24, 'João': 21, 'Atos': 28,
+    'Romanos': 16, '1 Coríntios': 16, '2 Coríntios': 13, 'Gálatas': 6, 'Efésios': 6,
+    'Filipenses': 4, 'Colossenses': 4, '1 Tessalonicenses': 5, '2 Tessalonicenses': 3,
+    '1 Timóteo': 6, '2 Timóteo': 4, 'Tito': 3, 'Filemom': 1, 'Hebreus': 13,
+    'Tiago': 5, '1 Pedro': 5, '2 Pedro': 3, '1 João': 5, '2 João': 1,
+    '3 João': 1, 'Judas': 1, 'Apocalipse': 22,
+  };
+  
+  static List<String> get allBooks => chaptersPerBook.keys.toList();
+
+  /// Simula a busca de versículos de um capítulo específico da Bíblia.
+  Future<List<Map<String, dynamic>>> fetchChapter(String book, int chapter) async {
+    // Simula um atraso de rede (opcional)
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    // Exemplo para Gênesis 1
+    if (book == 'Gênesis' && chapter == 1) {
+      return [
+        {'number': 1, 'text': 'No princípio, Deus criou os céus e a terra.', 'highlighted': false, 'note': ''},
+        {'number': 2, 'text': 'A terra era sem forma e vazia; havia trevas sobre a face do abismo, e o Espírito de Deus pairava sobre as águas.', 'highlighted': false, 'note': ''},
+        {'number': 3, 'text': 'Disse Deus: Haja luz. E houve luz.', 'highlighted': false, 'note': ''},
+        {'number': 4, 'text': 'Viu Deus que a luz era boa; e fez separação entre a luz e as trevas.', 'highlighted': false, 'note': ''},
+        {'number': 5, 'text': 'Chamou Deus à luz Dia e às trevas, Noite. Houve tarde e manhã, o primeiro dia.', 'highlighted': false, 'note': ''},
+        {'number': 6, 'text': 'Disse Deus: Haja firmamento no meio das águas e haja separação entre águas e águas.', 'highlighted': false, 'note': ''},
+        // Adicione mais versículos para simular um capítulo completo
+      ];
+    }
+    
+    // Versículos de exemplo genérico para outros capítulos (para funcionalidade)
+    final numberOfVerses = chapter % 10 + 10; // 10 a 19 versículos
+    return List.generate(numberOfVerses, (index) => {
+      'number': index + 1,
+      'text': 'Este é o versículo ${index + 1} do livro de $book, capítulo $chapter. (Conteúdo da API simulada)',
+      'highlighted': false,
+      'note': '',
+    });
+  }
+}
+
+// -----------------------------------------------------------------
+
 class BibleReaderScreen extends StatefulWidget {
   const BibleReaderScreen({super.key});
 
@@ -12,31 +69,92 @@ class BibleReaderScreen extends StatefulWidget {
 class _BibleReaderScreenState extends State<BibleReaderScreen> {
   String selectedBook = 'Gênesis';
   int selectedChapter = 1;
-  int selectedVerse = 1;
   bool isAudioPlaying = false;
-  
-  // Dados de exemplo - você deve substituir por dados reais do Supabase
-  final List<String> books = [
-    'Gênesis', 'Êxodo', 'Levítico', 'Números', 'Deuteronômio',
-    'Josué', 'Juízes', 'Rute', '1 Samuel', '2 Samuel',
-    'Mateus', 'Marcos', 'Lucas', 'João', 'Atos'
-  ];
-  
-  final Map<String, int> chaptersPerBook = {
-    'Gênesis': 50, 'Êxodo': 40, 'Levítico': 27, 'Números': 36,
-    'Deuteronômio': 34, 'Josué': 24, 'Juízes': 21, 'Rute': 4,
-    '1 Samuel': 31, '2 Samuel': 24, 'Mateus': 28, 'Marcos': 16,
-    'Lucas': 24, 'João': 21, 'Atos': 28
-  };
-  
-  // Versículos de exemplo - substituir por dados reais
-  List<Map<String, dynamic>> verses = [
-    {'number': 1, 'text': 'No princípio, Deus criou os céus e a terra.', 'highlighted': false, 'note': ''},
-    {'number': 2, 'text': 'A terra era sem forma e vazia; havia trevas sobre a face do abismo, e o Espírito de Deus pairava sobre as águas.', 'highlighted': false, 'note': ''},
-    {'number': 3, 'text': 'Disse Deus: Haja luz. E houve luz.', 'highlighted': false, 'note': ''},
-    {'number': 4, 'text': 'Viu Deus que a luz era boa; e fez separação entre a luz e as trevas.', 'highlighted': false, 'note': ''},
-    {'number': 5, 'text': 'Chamou Deus à luz Dia e às trevas, Noite. Houve tarde e manhã, o primeiro dia.', 'highlighted': false, 'note': ''},
-  ];
+  bool _isLoading = true;
+  List<Map<String, dynamic>> verses = [];
+  final BibleApi _api = BibleApi();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadChapter();
+  }
+
+  // --- Lógica de Carregamento da Bíblia ---
+  Future<void> _loadChapter() async {
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      // Simula a busca do capítulo na API
+      final newVerses = await _api.fetchChapter(selectedBook, selectedChapter);
+      setState(() {
+        verses = newVerses;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        verses = [];
+      });
+      _showSnackBar('Erro ao carregar o capítulo. Verifique a conexão.', isError: true);
+    }
+  }
+
+  // --- Funções de Navegação ---
+
+  void _previousChapter() {
+    if (selectedChapter > 1) {
+      setState(() {
+        selectedChapter--;
+      });
+      _loadChapter();
+    } else {
+      _showSnackBar('Você está no primeiro capítulo!');
+    }
+  }
+
+  void _nextChapter() {
+    final maxChapters = BibleApi.chaptersPerBook[selectedBook] ?? 1;
+    if (selectedChapter < maxChapters) {
+      setState(() {
+        selectedChapter++;
+      });
+      _loadChapter();
+    } else {
+      _showSnackBar('Você chegou ao último capítulo de $selectedBook!');
+    }
+  }
+
+  void _onBookSelected(String book) {
+    setState(() {
+      selectedBook = book;
+      selectedChapter = 1;
+    });
+    Navigator.pop(context);
+    _loadChapter();
+  }
+
+  void _onChapterSelected(int chapter) {
+    setState(() {
+      selectedChapter = chapter;
+    });
+    Navigator.pop(context);
+    _loadChapter();
+  }
+
+  // --- UX/UI e Interações ---
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+        backgroundColor: isError ? Colors.red.shade700 : Colors.green.shade700,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
   void _showVerseOptionsModal(int verseIndex) {
     final verse = verses[verseIndex];
@@ -53,6 +171,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Handle de arrastar
             Container(
               width: 40,
               height: 4,
@@ -64,20 +183,13 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
             const SizedBox(height: 20),
             Text(
               '$selectedBook $selectedChapter:${verse['number']}',
-              style: const TextStyle(
-                fontSize: 16,
+              style: TextStyle(
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
               ),
             ),
             const SizedBox(height: 20),
-            _buildOptionTile(
-              icon: Icons.bookmark_outline,
-              label: 'Salvar',
-              onTap: () {
-                Navigator.pop(context);
-                _showSnackBar('Versículo salvo!');
-              },
-            ),
             _buildOptionTile(
               icon: Icons.copy,
               label: 'Copiar',
@@ -98,29 +210,31 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
               },
             ),
             _buildOptionTile(
-              icon: Icons.lightbulb_outline,
-              label: 'Explicar',
-              onTap: () {
-                Navigator.pop(context);
-                _showExplanationDialog(verse);
-              },
-            ),
-            _buildOptionTile(
               icon: Icons.highlight,
-              label: verse['highlighted'] ? 'Remover sublinhado' : 'Sublinhar',
+              label: verse['highlighted'] ? 'Remover Destaque' : 'Destacar',
               onTap: () {
                 setState(() {
                   verses[verseIndex]['highlighted'] = !verse['highlighted'];
                 });
                 Navigator.pop(context);
+                _showSnackBar(verse['highlighted'] ? 'Versículo destacado!' : 'Destaque removido.');
+                // *Aqui seria o ponto de chamada para a API para salvar o destaque no DB.*
               },
             ),
             _buildOptionTile(
               icon: Icons.note_add_outlined,
-              label: 'Anotar',
+              label: verse['note'].isNotEmpty ? 'Ver/Editar Anotação' : 'Anotar',
               onTap: () {
                 Navigator.pop(context);
                 _showNoteDialog(verseIndex);
+              },
+            ),
+            _buildOptionTile(
+              icon: Icons.lightbulb_outline,
+              label: 'Estudo/Explicação',
+              onTap: () {
+                Navigator.pop(context);
+                _showExplanationDialog(verse);
               },
             ),
             const SizedBox(height: 20),
@@ -158,7 +272,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Adicionar Anotação'),
+        title: Text('${selectedBook} ${selectedChapter}:${verses[verseIndex]['number']} - Anotar'),
         content: TextField(
           controller: controller,
           maxLines: 4,
@@ -179,6 +293,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
               });
               Navigator.pop(context);
               _showSnackBar('Anotação salva!');
+              // *Aqui seria o ponto de chamada para a API para salvar a anotação no DB.*
             },
             child: const Text('Salvar'),
           ),
@@ -191,12 +306,12 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('$selectedBook $selectedChapter:${verse['number']}'),
+        title: Text('${selectedBook} ${selectedChapter}:${verse['number']} - Estudo'),
         content: const SingleChildScrollView(
           child: Text(
-            'Esta é uma explicação de exemplo do versículo. '
-            'Aqui você pode adicionar comentários teológicos, '
-            'contexto histórico e interpretações do texto bíblico.',
+            '**Explicação IA Simples:** Este versículo fala sobre a criação do mundo por Deus, '
+            'estabelecendo o poder e a soberania divina. (Em um app real, '
+            'essa explicação viria de uma base de dados teológica ou IA.)',
           ),
         ),
         actions: [
@@ -209,22 +324,14 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     );
   }
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
+  // --- Seletores de Livro e Capítulo (Bottom Sheets) ---
 
   void _showBookSelector() {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.6,
+        height: MediaQuery.of(context).size.height * 0.75, // Aumentado para melhor visualização
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -234,25 +341,20 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
             const SizedBox(height: 20),
             const Text(
               'Selecionar Livro',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
             Expanded(
               child: ListView.builder(
-                itemCount: books.length,
+                itemCount: BibleApi.allBooks.length,
                 itemBuilder: (context, index) {
+                  final book = BibleApi.allBooks[index];
                   return ListTile(
-                    title: Text(books[index]),
-                    trailing: books[index] == selectedBook
-                        ? const Icon(Icons.check, color: Colors.yellow)
+                    title: Text(book),
+                    trailing: book == selectedBook
+                        ? Icon(Icons.check_circle, color: Colors.yellow.shade700)
                         : null,
-                    onTap: () {
-                      setState(() {
-                        selectedBook = books[index];
-                        selectedChapter = 1;
-                      });
-                      Navigator.pop(context);
-                    },
+                    onTap: () => _onBookSelected(book),
                   );
                 },
               ),
@@ -264,7 +366,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
   }
 
   void _showChapterSelector() {
-    final maxChapters = chaptersPerBook[selectedBook] ?? 50;
+    final maxChapters = BibleApi.chaptersPerBook[selectedBook] ?? 1;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -277,9 +379,9 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
         child: Column(
           children: [
             const SizedBox(height: 20),
-            const Text(
-              'Selecionar Capítulo',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Text(
+              'Capítulos de $selectedBook',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
             Expanded(
@@ -296,12 +398,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                   final chapter = index + 1;
                   final isSelected = chapter == selectedChapter;
                   return InkWell(
-                    onTap: () {
-                      setState(() {
-                        selectedChapter = chapter;
-                      });
-                      Navigator.pop(context);
-                    },
+                    onTap: () => _onChapterSelected(chapter),
                     child: Container(
                       decoration: BoxDecoration(
                         color: isSelected
@@ -320,7 +417,9 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: isSelected ? Colors.black : null,
+                            color: isSelected
+                                ? Colors.black
+                                : Theme.of(context).textTheme.bodyLarge?.color,
                           ),
                         ),
                       ),
@@ -335,34 +434,19 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     );
   }
 
-  void _previousChapter() {
-    if (selectedChapter > 1) {
-      setState(() {
-        selectedChapter--;
-      });
-    }
-  }
-
-  void _nextChapter() {
-    final maxChapters = chaptersPerBook[selectedBook] ?? 50;
-    if (selectedChapter < maxChapters) {
-      setState(() {
-        selectedChapter++;
-      });
-    }
-  }
+  // --- Widget Principal (Build) ---
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.menu), // Trocado para ícone de menu/configurações
+          onPressed: () => _showSnackBar('Configurações/Menu lateral em desenvolvimento'),
         ),
         title: GestureDetector(
           onTap: _showBookSelector,
@@ -373,7 +457,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                 selectedBook,
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              const Icon(Icons.arrow_drop_down),
+              const Icon(Icons.arrow_drop_down, size: 24),
             ],
           ),
         ),
@@ -381,21 +465,13 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
-            onPressed: () {
-              _showSnackBar('Busca em desenvolvimento');
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () {
-              _showSnackBar('Mais opções em desenvolvimento');
-            },
+            onPressed: () => _showSnackBar('Busca avançada em desenvolvimento'),
           ),
         ],
       ),
       body: Column(
         children: [
-          // Seletor de capítulo
+          // Seletor e Navegação de Capítulo (Melhorado)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
@@ -412,167 +488,182 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.chevron_left),
+                  icon: const Icon(Icons.chevron_left, size: 30),
                   onPressed: _previousChapter,
                 ),
                 GestureDetector(
                   onTap: _showChapterSelector,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     decoration: BoxDecoration(
                       color: Colors.yellow.shade700,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Row(
-                      children: [
-                        const Text(
-                          'Capítulo ',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Text(
-                          '$selectedChapter',
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        const Icon(Icons.arrow_drop_down, color: Colors.black),
-                      ],
+                    child: Text(
+                      'Capítulo $selectedChapter',
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.chevron_right),
+                  icon: const Icon(Icons.chevron_right, size: 30),
                   onPressed: _nextChapter,
                 ),
               ],
             ),
           ),
           
-          // Botão de áudio
+          // Seção de Áudio e Leitura
           Padding(
-            padding: const EdgeInsets.all(16),
-            child: ElevatedButton.icon(
-              onPressed: () {
-                setState(() {
-                  isAudioPlaying = !isAudioPlaying;
-                });
-                _showSnackBar(
-                  isAudioPlaying ? 'Reproduzindo áudio...' : 'Áudio pausado',
-                );
-              },
-              icon: Icon(
-                isAudioPlaying ? Icons.pause : Icons.play_arrow,
-                color: Colors.black,
-              ),
-              label: Text(
-                isAudioPlaying ? 'Pausar Áudio' : 'Reproduzir Áudio',
-                style: const TextStyle(color: Colors.black),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.yellow.shade700,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
+            padding: const EdgeInsets.only(top: 16, bottom: 8, left: 16, right: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        isAudioPlaying = !isAudioPlaying;
+                      });
+                      _showSnackBar(
+                        isAudioPlaying ? 'Reproduzindo áudio (Simulado)...' : 'Áudio pausado',
+                      );
+                      // *Integração com pacote de áudio real (ex: audioplayers) aqui.*
+                    },
+                    icon: Icon(
+                      isAudioPlaying ? Icons.pause_circle_outline : Icons.headphones,
+                      color: Colors.black,
+                    ),
+                    label: Text(
+                      isAudioPlaying ? 'Pausar Áudio' : 'Ouvir Capítulo',
+                      style: const TextStyle(color: Colors.black),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.yellow.shade700,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      elevation: 4,
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
           
-          // Lista de versículos
+          // Indicador de Carregamento ou Lista de Versículos
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: verses.length,
-              itemBuilder: (context, index) {
-                final verse = verses[index];
-                return GestureDetector(
-                  onTap: () => _showVerseOptionsModal(index),
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 20),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: verse['highlighted']
-                          ? Colors.yellow.withOpacity(0.3)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      border: verse['note'].isNotEmpty
-                          ? Border.all(color: Colors.yellow.shade700, width: 1)
-                          : null,
-                    ),
+            child: _isLoading
+                ? Center(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: '${verse['number']} ',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.yellow.shade700,
-                                ),
-                              ),
-                              TextSpan(
-                                text: verse['text'],
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  height: 1.6,
-                                  color: isDark ? Colors.white : Colors.black,
-                                ),
-                              ),
-                            ],
+                        CircularProgressIndicator(color: Colors.yellow.shade700),
+                        const SizedBox(height: 16),
+                        const Text('Carregando versículos...'),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: verses.length,
+                    itemBuilder: (context, index) {
+                      final verse = verses[index];
+                      return GestureDetector(
+                        // Ao tocar no versículo, mostra o modal de opções
+                        onTap: () => _showVerseOptionsModal(index),
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                          decoration: BoxDecoration(
+                            // Destaque mais sutil
+                            color: verse['highlighted']
+                                ? Colors.yellow.withOpacity(isDark ? 0.2 : 0.1)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(8),
+                            // Borda se houver anotação
+                            border: verse['note'].isNotEmpty
+                                ? Border.all(color: Colors.yellow.shade700.withOpacity(0.5), width: 1.5)
+                                : null,
                           ),
-                        ),
-                        if (verse['note'].isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.yellow.shade700.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.note,
-                                  size: 16,
-                                  color: Colors.yellow.shade700,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    verse['note'],
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontStyle: FontStyle.italic,
-                                      color: isDark ? Colors.white70 : Colors.black87,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              RichText(
+                                text: TextSpan(
+                                  children: [
+                                    // Número do versículo em destaque
+                                    TextSpan(
+                                      text: '${verse['number']}. ',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.yellow.shade700,
+                                      ),
                                     ),
+                                    // Texto do versículo
+                                    TextSpan(
+                                      text: verse['text'],
+                                      style: TextStyle(
+                                        fontSize: 17, // Fonte maior para melhor leitura
+                                        height: 1.6,
+                                        color: isDark ? Colors.white : Colors.black,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Exibição da Anotação
+                              if (verse['note'].isNotEmpty) ...[
+                                const SizedBox(height: 10),
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Icon(
+                                        Icons.note_alt,
+                                        size: 16,
+                                        color: Colors.yellow.shade700,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          'Sua anotação: ${verse['note']}',
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontStyle: FontStyle.italic,
+                                            color: isDark ? Colors.white70 : Colors.black87,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
-                            ),
+                            ],
                           ),
-                        ],
-                      ],
-                    ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
         ],
       ),
+      // FAB para ir para a lista de versículos ou menu de leitura
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _showSnackBar('Ir para versículo específico');
-        },
+        onPressed: _showChapterSelector, // Usar para ir rapidamente para um capítulo
         backgroundColor: Colors.yellow.shade700,
         child: const Icon(Icons.format_list_numbered, color: Colors.black),
       ),
