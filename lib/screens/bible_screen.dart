@@ -6,8 +6,15 @@ import 'package:share_plus/share_plus.dart';
 // No mundo real, você usaria o pacote 'http' ou 'dio' para
 // fazer uma chamada REST para um serviço como Supabase, Firebase ou uma API de terceiros.
 
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
 class BibleApi {
-  // Dados de livros e capítulos (Bíblia completa)
+  final String translation;
+
+  BibleApi({this.translation = 'almeida'});
+
+  // Mapagem de livros e capítulos da Bíblia (mantida)
   static final Map<String, int> chaptersPerBook = {
     'Gênesis': 50, 'Êxodo': 40, 'Levítico': 27, 'Números': 36, 'Deuteronômio': 34,
     'Josué': 24, 'Juízes': 21, 'Rute': 4, '1 Samuel': 31, '2 Samuel': 24,
@@ -17,7 +24,6 @@ class BibleApi {
     'Ezequiel': 48, 'Daniel': 12, 'Oseias': 14, 'Joel': 3, 'Amós': 9,
     'Obadias': 1, 'Jonas': 4, 'Miqueias': 7, 'Naum': 3, 'Habacuque': 3,
     'Sofonias': 3, 'Ageu': 2, 'Zacarias': 14, 'Malaquias': 4,
-    // Novo Testamento
     'Mateus': 28, 'Marcos': 16, 'Lucas': 24, 'João': 21, 'Atos': 28,
     'Romanos': 16, '1 Coríntios': 16, '2 Coríntios': 13, 'Gálatas': 6, 'Efésios': 6,
     'Filipenses': 4, 'Colossenses': 4, '1 Tessalonicenses': 5, '2 Tessalonicenses': 3,
@@ -25,37 +31,36 @@ class BibleApi {
     'Tiago': 5, '1 Pedro': 5, '2 Pedro': 3, '1 João': 5, '2 João': 1,
     '3 João': 1, 'Judas': 1, 'Apocalipse': 22,
   };
-  
+
   static List<String> get allBooks => chaptersPerBook.keys.toList();
 
-  /// Simula a busca de versículos de um capítulo específico da Bíblia.
+  /// Busca capítulo na Bible API
   Future<List<Map<String, dynamic>>> fetchChapter(String book, int chapter) async {
-    // Simula um atraso de rede (opcional)
-    await Future.delayed(const Duration(milliseconds: 800));
+    final url = Uri.parse(
+        'https://bible-api.com/${Uri.encodeComponent(book)} $chapter?translation=$translation');
 
-    // Exemplo para Gênesis 1
-    if (book == 'Gênesis' && chapter == 1) {
-      return [
-        {'number': 1, 'text': 'No princípio, Deus criou os céus e a terra.', 'highlighted': false, 'note': ''},
-        {'number': 2, 'text': 'A terra era sem forma e vazia; havia trevas sobre a face do abismo, e o Espírito de Deus pairava sobre as águas.', 'highlighted': false, 'note': ''},
-        {'number': 3, 'text': 'Disse Deus: Haja luz. E houve luz.', 'highlighted': false, 'note': ''},
-        {'number': 4, 'text': 'Viu Deus que a luz era boa; e fez separação entre a luz e as trevas.', 'highlighted': false, 'note': ''},
-        {'number': 5, 'text': 'Chamou Deus à luz Dia e às trevas, Noite. Houve tarde e manhã, o primeiro dia.', 'highlighted': false, 'note': ''},
-        {'number': 6, 'text': 'Disse Deus: Haja firmamento no meio das águas e haja separação entre águas e águas.', 'highlighted': false, 'note': ''},
-        // Adicione mais versículos para simular um capítulo completo
-      ];
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+
+      if (data['verses'] != null) {
+        return List<Map<String, dynamic>>.from(data['verses'].map((v) => {
+              'number': v['verse'],
+              'text': v['text'],
+              'highlighted': false,
+              'note': '',
+            }));
+      } else {
+        // Se não houver versículos, retorna lista vazia
+        return [];
+      }
+    } else {
+      throw Exception('Erro ao carregar capítulo: ${response.statusCode}');
     }
-    
-    // Versículos de exemplo genérico para outros capítulos (para funcionalidade)
-    final numberOfVerses = chapter % 10 + 10; // 10 a 19 versículos
-    return List.generate(numberOfVerses, (index) => {
-      'number': index + 1,
-      'text': 'Este é o versículo ${index + 1} do livro de $book, capítulo $chapter. (Conteúdo da API simulada)',
-      'highlighted': false,
-      'note': '',
-    });
   }
 }
+
 
 // -----------------------------------------------------------------
 
@@ -72,7 +77,8 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
   bool isAudioPlaying = false;
   bool _isLoading = true;
   List<Map<String, dynamic>> verses = [];
-  final BibleApi _api = BibleApi();
+  final BibleApi _api = BibleApi(translation: 'almeida'); // português
+
 
   @override
   void initState() {
@@ -512,45 +518,6 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                 IconButton(
                   icon: const Icon(Icons.chevron_right, size: 30),
                   onPressed: _nextChapter,
-                ),
-              ],
-            ),
-          ),
-          
-          // Seção de Áudio e Leitura
-          Padding(
-            padding: const EdgeInsets.only(top: 16, bottom: 8, left: 16, right: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      setState(() {
-                        isAudioPlaying = !isAudioPlaying;
-                      });
-                      _showSnackBar(
-                        isAudioPlaying ? 'Reproduzindo áudio (Simulado)...' : 'Áudio pausado',
-                      );
-                      // *Integração com pacote de áudio real (ex: audioplayers) aqui.*
-                    },
-                    icon: Icon(
-                      isAudioPlaying ? Icons.pause_circle_outline : Icons.headphones,
-                      color: Colors.black,
-                    ),
-                    label: Text(
-                      isAudioPlaying ? 'Pausar Áudio' : 'Ouvir Capítulo',
-                      style: const TextStyle(color: Colors.black),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.yellow.shade700,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      elevation: 4,
-                    ),
-                  ),
                 ),
               ],
             ),
