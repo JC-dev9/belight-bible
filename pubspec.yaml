@@ -14,6 +14,7 @@ dependencies:
   supabase_flutter: ^2.10.3
   share_plus: ^7.2.1
   http: ^1.5.0
+  hive_flutter: ^1.1.0
 
 dev_dependencies:
   flutter_test:
@@ -25,5 +26,6 @@ flutter:
 
   assets:
     - lib/assets/logo.png
+    - lib/assets/bible/pt_nvi.json
 
 
