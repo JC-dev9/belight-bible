@@ -6,7 +6,7 @@ import 'screens/forgot_password.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 const supabaseUrl = 'https://dupoveauficvwgtrvxsx.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR1cG92ZWF1ZmljdndndHJ2eHN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE0ODM2NTAsImV4cCI6MjA3NzA1OTY1MH0.9Gk_d6nj1cGSa6nbRHyuPmtiw7VU8Te7P8_qR5hRg8g';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR1cG92ZWF1ZmljdndndHJ2eHN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE0ODM2NTAsImV4cCI6MjA3NzA1OTY1MH0.9Gk_d6nj1cGSa6nbRHyuPmtiw7VU8Te7P8_qR5hRg8g';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

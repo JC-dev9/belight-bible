@@ -23,11 +23,15 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Chat Bíblico'),
+        title: const Text('Chat Bíblico',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+        ),
+        ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: BackButton(color: theme.iconTheme.color),
+        
       ),
       body: Column(
         children: [

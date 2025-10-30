@@ -2,10 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
-// --- SIMULAÇÃO DA API DA BÍBLIA EM PORTUGUÊS ---
-// No mundo real, você usaria o pacote 'http' ou 'dio' para
-// fazer uma chamada REST para um serviço como Supabase, Firebase ou uma API de terceiros.
-
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -115,8 +111,6 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
         selectedChapter--;
       });
       _loadChapter();
-    } else {
-      _showSnackBar('Você está no primeiro capítulo!');
     }
   }
 
@@ -151,16 +145,39 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
 
   // --- UX/UI e Interações ---
 
-  void _showSnackBar(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 2),
-        backgroundColor: isError ? Colors.red.shade700 : Colors.green.shade700,
-        behavior: SnackBarBehavior.floating,
+ void _showSnackBar(String message, {bool isError = false}) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Row(
+        children: [
+          Icon(
+            isError ? Icons.error_outline : Icons.check_circle_outline,
+            color: Colors.white,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
-    );
-  }
+      backgroundColor: isError ? Colors.redAccent : Colors.green,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      margin: const EdgeInsets.all(12),
+      duration: const Duration(seconds: 3),
+    ),
+  );
+}
+
+
 
   void _showVerseOptionsModal(int verseIndex) {
     final verse = verses[verseIndex];
