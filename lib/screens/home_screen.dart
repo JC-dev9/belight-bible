@@ -21,12 +21,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     // Definindo as cores para melhor clareza e reutilização
     final Color primaryColor = Colors.yellow.shade700;
-    final Color unselectedItemColor = Theme.of(context).iconTheme.color ?? Colors.grey;
+    final Color unselectedItemColor =
+        Theme.of(context).iconTheme.color ?? Colors.grey;
 
     return Scaffold(
-      
-      body: _screens[_currentIndex],
-      
+      body: IndexedStack(index: _currentIndex, children: _screens),
+
       // 1. Substituição do BottomNavigationBar pelo NavigationBar (Material 3)
       bottomNavigationBar: NavigationBar(
         // Propriedades de controle e eventos
@@ -36,14 +36,14 @@ class _HomeScreenState extends State<HomeScreen> {
             _currentIndex = index;
           });
         },
-        
+
         // Propriedades de estilo
         height: 80, // A altura padrão do M3, semelhante ao do vídeo
         elevation: 0, // Remove a sombra
-        
         // Define a cor do indicador em formato de pílula
-        indicatorColor: primaryColor.withOpacity(0.2), // Um amarelo claro para o fundo do item selecionado
-
+        indicatorColor: primaryColor.withOpacity(
+          0.2,
+        ), // Um amarelo claro para o fundo do item selecionado
         // 2. Definição dos destinos (itens) da navegação
         destinations: [
           NavigationDestination(
