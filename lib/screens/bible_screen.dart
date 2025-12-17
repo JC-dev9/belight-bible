@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
-
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../utils/theme.dart'; // Certifique-se que este arquivo existe na mesma pasta
+
+// ============================================================================
+// 1. API DA BÍBLIA
+// ============================================================================
 
 class BibleApi {
   final String translation;
 
   BibleApi({this.translation = 'almeida'});
 
-  // Mapagem de livros e capítulos da Bíblia (mantida)
   static final Map<String, int> chaptersPerBook = {
     'Gênesis': 50, 'Êxodo': 40, 'Levítico': 27, 'Números': 36, 'Deuteronômio': 34,
     'Josué': 24, 'Juízes': 21, 'Rute': 4, '1 Samuel': 31, '2 Samuel': 24,
@@ -30,51 +33,61 @@ class BibleApi {
 
   static List<String> get allBooks => chaptersPerBook.keys.toList();
 
-  /// Busca capítulo na Bible API
   Future<List<Map<String, dynamic>>> fetchChapter(String book, int chapter) async {
     final url = Uri.parse(
         'https://bible-api.com/${Uri.encodeComponent(book)} $chapter?translation=$translation');
 
-    final response = await http.get(url);
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-
-      if (data['verses'] != null) {
-        return List<Map<String, dynamic>>.from(data['verses'].map((v) => {
-              'number': v['verse'],
-              'text': v['text'],
-              'highlighted': false,
-              'note': '',
-            }));
-      } else {
-        // Se não houver versículos, retorna lista vazia
-        return [];
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['verses'] != null) {
+          return List<Map<String, dynamic>>.from(data['verses'].map((v) => {
+                'number': v['verse'],
+                'text': v['text'].toString().trim(),
+                'highlighted': false,
+                'note': '',
+              }));
+        }
       }
-    } else {
-      throw Exception('Erro ao carregar capítulo: ${response.statusCode}');
+      return [];
+    } catch (e) {
+      throw Exception('Falha na conexão');
     }
   }
 }
 
-
-// -----------------------------------------------------------------
+// ============================================================================
+// 2. TELA DA BÍBLIA
+// ============================================================================
 
 class BibleReaderScreen extends StatefulWidget {
-  const BibleReaderScreen({super.key});
+  // Parâmetros recebidos da HomeScreen
+  final ReadingTheme currentTheme;
+  final Function(ReadingTheme) onThemeChanged;
+
+  const BibleReaderScreen({
+    super.key, 
+    required this.currentTheme, 
+    required this.onThemeChanged
+  });
 
   @override
   State<BibleReaderScreen> createState() => _BibleReaderScreenState();
 }
 
 class _BibleReaderScreenState extends State<BibleReaderScreen> {
+  // Estado de Dados
+  final BibleApi _api = BibleApi(translation: 'almeida');
   String selectedBook = 'Gênesis';
   int selectedChapter = 1;
-  bool isAudioPlaying = false;
-  bool _isLoading = true;
   List<Map<String, dynamic>> verses = [];
-  final BibleApi _api = BibleApi(translation: 'almeida'); // português
+  bool _isLoading = true;
 
+  // Estado de UI Local
+  double _fontSize = 18.0;
+  
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -82,307 +95,491 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     _loadChapter();
   }
 
-  // --- Lógica de Carregamento da Bíblia ---
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  // --- Lógica de Dados ---
+
   Future<void> _loadChapter() async {
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
     try {
-      // Simula a busca do capítulo na API
       final newVerses = await _api.fetchChapter(selectedBook, selectedChapter);
       setState(() {
         verses = newVerses;
         _isLoading = false;
       });
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(0);
+      }
     } catch (e) {
       setState(() {
         _isLoading = false;
         verses = [];
       });
-      _showSnackBar('Erro ao carregar o capítulo. Verifique a conexão.', isError: true);
+      _showSnackBar('Erro de conexão.', isError: true, action: _loadChapter);
     }
   }
 
-  // --- Funções de Navegação ---
-
-  void _previousChapter() {
-    if (selectedChapter > 1) {
-      setState(() {
-        selectedChapter--;
-      });
-      _loadChapter();
-    }
-  }
-
-  void _nextChapter() {
+  void _navigateChapter(int delta) {
     final maxChapters = BibleApi.chaptersPerBook[selectedBook] ?? 1;
-    if (selectedChapter < maxChapters) {
-      setState(() {
-        selectedChapter++;
-      });
+    final newChapter = selectedChapter + delta;
+
+    if (newChapter >= 1 && newChapter <= maxChapters) {
+      setState(() => selectedChapter = newChapter);
       _loadChapter();
-    } else {
-      _showSnackBar('Você chegou ao último capítulo de $selectedBook!');
+    } else if (newChapter > maxChapters) {
+      _showSnackBar('Último capítulo de $selectedBook.');
     }
   }
 
-  void _onBookSelected(String book) {
-    setState(() {
-      selectedBook = book;
-      selectedChapter = 1;
-    });
-    Navigator.pop(context);
-    _loadChapter();
+  // --- Helpers de Estilo (Baseados no Tema Atual) ---
+
+  Color get _backgroundColor {
+    switch (widget.currentTheme) {
+      case ReadingTheme.dark: return AppColors.darkBg;
+      case ReadingTheme.sepia: return AppColors.sepiaBg;
+      default: return Colors.white;
+    }
   }
 
-  void _onChapterSelected(int chapter) {
-    setState(() {
-      selectedChapter = chapter;
-    });
-    Navigator.pop(context);
-    _loadChapter();
+  Color get _textColor {
+    switch (widget.currentTheme) {
+      case ReadingTheme.dark: return Colors.grey.shade300;
+      case ReadingTheme.sepia: return AppColors.sepiaText;
+      default: return Colors.grey.shade900;
+    }
   }
 
-  // --- UX/UI e Interações ---
+  Color get _verseNumColor {
+     switch (widget.currentTheme) {
+      case ReadingTheme.dark: return Colors.grey.shade600;
+      case ReadingTheme.sepia: return AppColors.sepiaAccent;
+      default: return Colors.grey.shade500;
+    }
+  }
 
- void _showSnackBar(String message, {bool isError = false}) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Row(
-        children: [
-          Icon(
-            isError ? Icons.error_outline : Icons.check_circle_outline,
-            color: Colors.white,
+  // --- Widgets da UI ---
+
+  @override
+  Widget build(BuildContext context) {
+    // 1. Animação do Fundo da Tela
+    return TweenAnimationBuilder<Color?>(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
+      tween: ColorTween(
+        begin: Colors.white, 
+        end: _backgroundColor, // Destino da cor de fundo
+      ),
+      builder: (context, animatedBgColor, child) {
+        
+        // 2. Animação da Cor do Texto
+        return TweenAnimationBuilder<Color?>(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          tween: ColorTween(
+            begin: Colors.black, 
+            end: _textColor // Destino da cor do texto
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
+          builder: (context, animatedTextColor, _) {
+            
+            return Scaffold(
+              backgroundColor: animatedBgColor, // Fundo animado
+              body: SafeArea(
+                child: Column(
+                  children: [
+                    // Passamos as cores animadas para os componentes
+                    _buildHeader(
+                      bgColor: animatedBgColor!, 
+                      textColor: animatedTextColor!
+                    ),
+                    
+                    Expanded(
+                      child: _isLoading
+                          ? _buildLoadingSkeleton()
+                          : verses.isEmpty
+                              ? _buildErrorState(animatedTextColor)
+                              : _buildVersesList(animatedTextColor),
+                    ),
+                    
+                    _buildBottomControls(
+                      bgColor: animatedBgColor, 
+                      textColor: animatedTextColor
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+        );
+      },
+    );
+  }
+
+  Widget _buildHeader({required Color bgColor, required Color textColor}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: bgColor,
+        border: Border(bottom: BorderSide(color: textColor.withOpacity(0.05))),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            icon: Icon(Icons.text_format, color: textColor),
+            onPressed: _showDisplaySettings,
+            tooltip: 'Ajustar texto',
+          ),
+          GestureDetector(
+            onTap: _showBookSelector,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: textColor.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    selectedBook,
+                    style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(Icons.keyboard_arrow_down, size: 18, color: textColor),
+                ],
               ),
             ),
           ),
+          IconButton(
+            icon: Icon(Icons.search, color: textColor),
+            onPressed: () => _showSnackBar('Busca em breve!'),
+          ),
         ],
       ),
-      backgroundColor: isError ? Colors.redAccent : Colors.green,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+    );
+  }
+
+  Widget _buildVersesList(Color animatedTextColor) {
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 80),
+      itemCount: verses.length,
+      physics: const BouncingScrollPhysics(),
+      itemBuilder: (context, index) {
+        final verse = verses[index];
+        final isHighlighted = verse['highlighted'] == true;
+        final hasNote = verse['note'].toString().isNotEmpty;
+
+        return GestureDetector(
+          onTap: () => _showVerseOptionsModal(index),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: isHighlighted 
+                  ? AppColors.highlightColor.withOpacity(widget.currentTheme == ReadingTheme.dark ? 0.3 : 0.4) 
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(4),
+              border: hasNote ? Border(left: BorderSide(color: Colors.orange, width: 3)) : null,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                RichText(
+                  text: TextSpan(
+                    style: TextStyle(
+                      fontSize: _fontSize,
+                      height: 1.6,
+                      color: animatedTextColor, // Usa a cor animada
+                      fontFamily: 'Georgia',
+                    ),
+                    children: [
+                      WidgetSpan(
+                        child: Transform.translate(
+                          offset: const Offset(0, -4),
+                          child: Text(
+                            '${verse['number']} ',
+                            style: TextStyle(fontSize: _fontSize * 0.6, fontWeight: FontWeight.bold, color: _verseNumColor),
+                          ),
+                        ),
+                      ),
+                      TextSpan(text: verse['text']),
+                    ],
+                  ),
+                ),
+                if (hasNote) 
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8, left: 4),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.note, size: 14, color: Colors.orange),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            verse['note'],
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 12, color: animatedTextColor.withOpacity(0.7), fontStyle: FontStyle.italic),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBottomControls({required Color bgColor, required Color textColor}) {
+    final isFirst = selectedChapter == 1;
+    final maxChapters = BibleApi.chaptersPerBook[selectedBook] ?? 1;
+    final isLast = selectedChapter == maxChapters;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: bgColor,
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))],
       ),
-      margin: const EdgeInsets.all(12),
-      duration: const Duration(seconds: 3),
-    ),
-  );
-}
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildNavButton(
+            icon: Icons.chevron_left,
+            label: 'Anterior',
+            color: textColor,
+            onTap: isFirst ? null : () => _navigateChapter(-1),
+          ),
+          GestureDetector(
+            onTap: _showChapterSelector,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+              decoration: BoxDecoration(
+                color: textColor.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: Text(
+                'Capítulo $selectedChapter',
+                style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
+              ),
+            ),
+          ),
+          _buildNavButton(
+            icon: Icons.chevron_right,
+            label: 'Próximo',
+            color: textColor,
+            isRight: true,
+            onTap: isLast ? null : () => _navigateChapter(1),
+          ),
+        ],
+      ),
+    );
+  }
 
+  Widget _buildNavButton({required IconData icon, required String label, required Color color, required VoidCallback? onTap, bool isRight = false}) {
+    final isDisabled = onTap == null;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(30),
+      child: Opacity(
+        opacity: isDisabled ? 0.3 : 1.0,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Icon(icon, color: color),
+        ),
+      ),
+    );
+  }
 
+  Widget _buildLoadingSkeleton() {
+    return Center(
+      child: CircularProgressIndicator(
+        color: widget.currentTheme == ReadingTheme.sepia ? AppColors.sepiaAccent : Colors.blueGrey,
+      ),
+    );
+  }
 
-  void _showVerseOptionsModal(int verseIndex) {
-    final verse = verses[verseIndex];
+  Widget _buildErrorState(Color textColor) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.wifi_off, size: 64, color: textColor.withOpacity(0.3)),
+          const SizedBox(height: 16),
+          Text('Não foi possível carregar.', style: TextStyle(color: textColor)),
+          TextButton(onPressed: _loadChapter, child: const Text('Tentar Novamente'))
+        ],
+      ),
+    );
+  }
+
+  // --- Modais ---
+
+  void _showDisplaySettings() {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle de arrastar
-            Container(
-              width: 40,
-              height: 4,
+      builder: (context) {
+        // StatefulBuilder para atualizar o modal internamente
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            
+            Color getModalBg() {
+              switch (widget.currentTheme) {
+                case ReadingTheme.dark: return AppColors.darkSurface;
+                case ReadingTheme.sepia: return AppColors.sepiaBg;
+                default: return Colors.white;
+              }
+            }
+            
+            Color getModalText() {
+              switch (widget.currentTheme) {
+                case ReadingTheme.dark: return Colors.white;
+                case ReadingTheme.sepia: return AppColors.sepiaText;
+                default: return Colors.black;
+              }
+            }
+
+            return Container(
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.grey.shade400,
-                borderRadius: BorderRadius.circular(2),
+                color: getModalBg(),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10)]
               ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              '$selectedBook $selectedChapter:${verse['number']}',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).textTheme.bodyLarge?.color,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Aparência', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: getModalText())),
+                  const SizedBox(height: 20),
+
+                  Row(
+                    children: [
+                      Icon(Icons.text_fields, size: 16, color: getModalText()),
+                      Expanded(
+                        child: Slider(
+                          value: _fontSize,
+                          min: 12,
+                          max: 30,
+                          divisions: 18,
+                          activeColor: widget.currentTheme == ReadingTheme.sepia ? AppColors.sepiaAccent : Colors.blue,
+                          inactiveColor: getModalText().withOpacity(0.2),
+                          label: _fontSize.round().toString(),
+                          onChanged: (val) {
+                            this.setState(() => _fontSize = val);
+                            setModalState(() {}); 
+                          },
+                        ),
+                      ),
+                      Icon(Icons.text_fields, size: 28, color: getModalText()),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+                  Text('Tema', style: TextStyle(fontWeight: FontWeight.w600, color: getModalText())),
+                  const SizedBox(height: 10),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildThemeOptionInternal(setModalState, ReadingTheme.light, Colors.white, Colors.black, 'Claro', getModalText()),
+                      _buildThemeOptionInternal(setModalState, ReadingTheme.sepia, AppColors.sepiaBg, AppColors.sepiaText, 'Papel', getModalText()),
+                      _buildThemeOptionInternal(setModalState, ReadingTheme.dark, AppColors.darkBg, Colors.white, 'Escuro', getModalText()),
+                    ],
+                  )
+                ],
               ),
-            ),
-            const SizedBox(height: 20),
-            _buildOptionTile(
-              icon: Icons.copy,
-              label: 'Copiar',
-              onTap: () {
-                Clipboard.setData(ClipboardData(
-                  text: '$selectedBook $selectedChapter:${verse['number']} - ${verse['text']}',
-                ));
-                Navigator.pop(context);
-                _showSnackBar('Versículo copiado!');
-              },
-            ),
-            _buildOptionTile(
-              icon: Icons.share,
-              label: 'Partilhar',
-              onTap: () {
-                Navigator.pop(context);
-                Share.share('$selectedBook $selectedChapter:${verse['number']} - ${verse['text']}');
-              },
-            ),
-            _buildOptionTile(
-              icon: Icons.highlight,
-              label: verse['highlighted'] ? 'Remover Destaque' : 'Destacar',
-              onTap: () {
-                setState(() {
-                  verses[verseIndex]['highlighted'] = !verse['highlighted'];
-                });
-                Navigator.pop(context);
-                _showSnackBar(verse['highlighted'] ? 'Versículo destacado!' : 'Destaque removido.');
-                // *Aqui seria o ponto de chamada para a API para salvar o destaque no DB.*
-              },
-            ),
-            _buildOptionTile(
-              icon: Icons.note_add_outlined,
-              label: verse['note'].isNotEmpty ? 'Ver/Editar Anotação' : 'Anotar',
-              onTap: () {
-                Navigator.pop(context);
-                _showNoteDialog(verseIndex);
-              },
-            ),
-            _buildOptionTile(
-              icon: Icons.lightbulb_outline,
-              label: 'Estudo/Explicação',
-              onTap: () {
-                Navigator.pop(context);
-                _showExplanationDialog(verse);
-              },
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
+            );
+          },
+        );
+      },
     );
   }
 
-  Widget _buildOptionTile({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        child: Row(
-          children: [
-            Icon(icon, size: 24, color: Colors.yellow.shade700),
-            const SizedBox(width: 20),
-            Text(
-              label,
-              style: const TextStyle(fontSize: 16),
+  Widget _buildThemeOptionInternal(StateSetter setModalState, ReadingTheme theme, Color bg, Color text, String label, Color labelColor) {
+    final isSelected = widget.currentTheme == theme;
+    return GestureDetector(
+      onTap: () {
+        // AVISO AO PAI (HomeScreen) para mudar o tema e a cor da barra
+        widget.onThemeChanged(theme);
+        setModalState(() {}); // Atualiza o modal
+      },
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+                color: bg,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected ? (theme == ReadingTheme.sepia ? AppColors.sepiaAccent : Colors.blue) : Colors.grey.shade400,
+                  width: isSelected ? 3 : 1,
+                ),
+                boxShadow: [if(isSelected) BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8)]
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showNoteDialog(int verseIndex) {
-    final controller = TextEditingController(text: verses[verseIndex]['note']);
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('${selectedBook} ${selectedChapter}:${verses[verseIndex]['number']} - Anotar'),
-        content: TextField(
-          controller: controller,
-          maxLines: 4,
-          decoration: const InputDecoration(
-            hintText: 'Digite sua anotação...',
-            border: OutlineInputBorder(),
+            child: Center(
+              child: Text('Aa', style: TextStyle(color: text, fontWeight: FontWeight.bold)),
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                verses[verseIndex]['note'] = controller.text;
-              });
-              Navigator.pop(context);
-              _showSnackBar('Anotação salva!');
-              // *Aqui seria o ponto de chamada para a API para salvar a anotação no DB.*
-            },
-            child: const Text('Salvar'),
-          ),
+          const SizedBox(height: 8),
+          Text(label, style: TextStyle(fontSize: 12, color: labelColor)),
         ],
       ),
     );
   }
-
-  void _showExplanationDialog(Map<String, dynamic> verse) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('${selectedBook} ${selectedChapter}:${verse['number']} - Estudo'),
-        content: const SingleChildScrollView(
-          child: Text(
-            '**Explicação IA Simples:** Este versículo fala sobre a criação do mundo por Deus, '
-            'estabelecendo o poder e a soberania divina. (Em um app real, '
-            'essa explicação viria de uma base de dados teológica ou IA.)',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Fechar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- Seletores de Livro e Capítulo (Bottom Sheets) ---
 
   void _showBookSelector() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.75, // Aumentado para melhor visualização
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            const Text(
-              'Selecionar Livro',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: ListView.builder(
-                itemCount: BibleApi.allBooks.length,
-                itemBuilder: (context, index) {
-                  final book = BibleApi.allBooks[index];
-                  return ListTile(
-                    title: Text(book),
-                    trailing: book == selectedBook
-                        ? Icon(Icons.check_circle, color: Colors.yellow.shade700)
-                        : null,
-                    onTap: () => _onBookSelected(book),
-                  );
-                },
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.9,
+        builder: (_, controller) => Container(
+          decoration: BoxDecoration(
+            color: _backgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text('Livros', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _textColor)),
               ),
-            ),
-          ],
+              Expanded(
+                child: ListView.builder(
+                  controller: controller,
+                  itemCount: BibleApi.allBooks.length,
+                  itemBuilder: (context, index) {
+                    final book = BibleApi.allBooks[index];
+                    final isSelected = book == selectedBook;
+                    return ListTile(
+                      title: Text(book, style: TextStyle(color: isSelected ? Colors.blue : _textColor, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                      trailing: isSelected ? const Icon(Icons.check, color: Colors.blue) : null,
+                      onTap: () {
+                        setState(() {
+                          selectedBook = book;
+                          selectedChapter = 1;
+                        });
+                        Navigator.pop(context);
+                        _loadChapter();
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -396,53 +593,45 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.6,
         decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
+          color: _backgroundColor,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           children: [
-            const SizedBox(height: 20),
-            Text(
-              'Capítulos de $selectedBook',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text('Capítulos de $selectedBook', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _textColor)),
             ),
-            const SizedBox(height: 10),
             Expanded(
               child: GridView.builder(
                 padding: const EdgeInsets.all(16),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 5,
-                  mainAxisSpacing: 10,
                   crossAxisSpacing: 10,
-                  childAspectRatio: 1.2,
+                  mainAxisSpacing: 10,
                 ),
                 itemCount: maxChapters,
                 itemBuilder: (context, index) {
                   final chapter = index + 1;
                   final isSelected = chapter == selectedChapter;
                   return InkWell(
-                    onTap: () => _onChapterSelected(chapter),
+                    onTap: () {
+                      setState(() => selectedChapter = chapter);
+                      Navigator.pop(context);
+                      _loadChapter();
+                    },
                     child: Container(
                       decoration: BoxDecoration(
-                        color: isSelected
-                            ? Colors.yellow.shade700
-                            : Theme.of(context).cardColor,
-                        border: Border.all(
-                          color: isSelected
-                              ? Colors.yellow.shade700
-                              : Colors.grey.shade400,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
+                        color: isSelected ? Colors.blue : _textColor.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(10),
+                        border: isSelected ? null : Border.all(color: _textColor.withOpacity(0.1)),
                       ),
                       child: Center(
                         child: Text(
                           '$chapter',
                           style: TextStyle(
-                            fontSize: 16,
+                            color: isSelected ? Colors.white : _textColor,
                             fontWeight: FontWeight.bold,
-                            color: isSelected
-                                ? Colors.black
-                                : Theme.of(context).textTheme.bodyLarge?.color,
                           ),
                         ),
                       ),
@@ -457,199 +646,113 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     );
   }
 
-  // --- Widget Principal (Build) ---
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        leading: IconButton(
-          icon: const Icon(Icons.menu), // Trocado para ícone de menu/configurações
-          onPressed: () => _showSnackBar('Configurações/Menu lateral em desenvolvimento'),
+  void _showVerseOptionsModal(int verseIndex) {
+    final verse = verses[verseIndex];
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: _backgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        title: GestureDetector(
-          onTap: _showBookSelector,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                selectedBook,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const Icon(Icons.arrow_drop_down, size: 24),
-            ],
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () => _showSnackBar('Busca avançada em desenvolvimento'),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Seletor e Navegação de Capítulo (Melhorado)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 20),
+             Text('$selectedBook $selectedChapter:${verse['number']}', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _textColor)),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                IconButton(
-                  icon: const Icon(Icons.chevron_left, size: 30),
-                  onPressed: _previousChapter,
-                ),
-                GestureDetector(
-                  onTap: _showChapterSelector,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.yellow.shade700,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'Capítulo $selectedChapter',
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.chevron_right, size: 30),
-                  onPressed: _nextChapter,
-                ),
+                _buildOptionIcon(Icons.copy, 'Copiar', () {
+                  Clipboard.setData(ClipboardData(text: '${verse['text']} ($selectedBook $selectedChapter:${verse['number']})'));
+                  Navigator.pop(context);
+                  _showSnackBar('Versículo copiado');
+                }),
+                _buildOptionIcon(Icons.share, 'Partilhar', () {
+                  Navigator.pop(context);
+                  Share.share('${verse['text']} ($selectedBook $selectedChapter:${verse['number']})');
+                }),
+                _buildOptionIcon(Icons.highlight, 'Destacar', () {
+                  setState(() => verses[verseIndex]['highlighted'] = !verses[verseIndex]['highlighted']);
+                  Navigator.pop(context);
+                }),
+                _buildOptionIcon(Icons.edit_note, 'Anotar', () {
+                  Navigator.pop(context);
+                  _showNoteDialog(verseIndex);
+                }),
               ],
             ),
+            const SizedBox(height: 30),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOptionIcon(IconData icon, String label, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: _textColor.withOpacity(0.05),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: _textColor),
           ),
-          
-          // Indicador de Carregamento ou Lista de Versículos
-          Expanded(
-            child: _isLoading
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircularProgressIndicator(color: Colors.yellow.shade700),
-                        const SizedBox(height: 16),
-                        const Text('Carregando versículos...'),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: verses.length,
-                    itemBuilder: (context, index) {
-                      final verse = verses[index];
-                      return GestureDetector(
-                        // Ao tocar no versículo, mostra o modal de opções
-                        onTap: () => _showVerseOptionsModal(index),
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                          decoration: BoxDecoration(
-                            // Destaque mais sutil
-                            color: verse['highlighted']
-                                ? Colors.yellow.withOpacity(isDark ? 0.2 : 0.1)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                            // Borda se houver anotação
-                            border: verse['note'].isNotEmpty
-                                ? Border.all(color: Colors.yellow.shade700.withOpacity(0.5), width: 1.5)
-                                : null,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              RichText(
-                                text: TextSpan(
-                                  children: [
-                                    // Número do versículo em destaque
-                                    TextSpan(
-                                      text: '${verse['number']}. ',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.yellow.shade700,
-                                      ),
-                                    ),
-                                    // Texto do versículo
-                                    TextSpan(
-                                      text: verse['text'],
-                                      style: TextStyle(
-                                        fontSize: 17, // Fonte maior para melhor leitura
-                                        height: 1.6,
-                                        color: isDark ? Colors.white : Colors.black,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              // Exibição da Anotação
-                              if (verse['note'].isNotEmpty) ...[
-                                const SizedBox(height: 10),
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Icon(
-                                        Icons.note_alt,
-                                        size: 16,
-                                        color: Colors.yellow.shade700,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          'Sua anotação: ${verse['note']}',
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontStyle: FontStyle.italic,
-                                            color: isDark ? Colors.white70 : Colors.black87,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-          ),
+          const SizedBox(height: 8),
+          Text(label, style: TextStyle(color: _textColor, fontSize: 12)),
         ],
       ),
-      // FAB para ir para a lista de versículos ou menu de leitura
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showChapterSelector, // Usar para ir rapidamente para um capítulo
-        backgroundColor: Colors.yellow.shade700,
-        child: const Icon(Icons.format_list_numbered, color: Colors.black),
+    );
+  }
+
+  void _showNoteDialog(int index) {
+    final controller = TextEditingController(text: verses[index]['note']);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: _backgroundColor,
+        title: Text('Anotação', style: TextStyle(color: _textColor)),
+        content: TextField(
+          controller: controller,
+          style: TextStyle(color: _textColor),
+          maxLines: 3,
+          decoration: InputDecoration(
+            hintText: 'Escreva sua reflexão...',
+            hintStyle: TextStyle(color: _textColor.withOpacity(0.5)),
+            filled: true,
+            fillColor: _textColor.withOpacity(0.05),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          ElevatedButton(
+            onPressed: () {
+              setState(() => verses[index]['note'] = controller.text);
+              Navigator.pop(context);
+            },
+            child: const Text('Salvar'),
+          )
+        ],
+      ),
+    );
+  }
+
+  void _showSnackBar(String msg, {bool isError = false, VoidCallback? action}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? Colors.redAccent : Colors.grey.shade800,
+        behavior: SnackBarBehavior.floating,
+        action: action != null ? SnackBarAction(label: 'Tentar', onPressed: action, textColor: Colors.white) : null,
       ),
     );
   }
