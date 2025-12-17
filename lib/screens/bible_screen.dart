@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../utils/theme.dart'; // Certifique-se que este arquivo existe na mesma pasta
+import '../utils/theme.dart'; // Certifique-se que o AppTheme está aqui dentro
 
 // ============================================================================
 // 1. API DA BÍBLIA
@@ -62,7 +62,6 @@ class BibleApi {
 // ============================================================================
 
 class BibleReaderScreen extends StatefulWidget {
-  // Parâmetros recebidos da HomeScreen
   final ReadingTheme currentTheme;
   final Function(ReadingTheme) onThemeChanged;
 
@@ -135,7 +134,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     }
   }
 
-  // --- Helpers de Estilo (Baseados no Tema Atual) ---
+  // --- Helpers de Estilo ---
 
   Color get _backgroundColor {
     switch (widget.currentTheme) {
@@ -161,36 +160,36 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     }
   }
 
+  // Cor principal para elementos de UI (Dourado/Amarelo)
+  Color get _uiActiveColor => AppTheme.accentGold; 
+
   // --- Widgets da UI ---
 
   @override
   Widget build(BuildContext context) {
-    // 1. Animação do Fundo da Tela
     return TweenAnimationBuilder<Color?>(
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 400),
       curve: Curves.easeInOut,
       tween: ColorTween(
         begin: Colors.white, 
-        end: _backgroundColor, // Destino da cor de fundo
+        end: _backgroundColor, 
       ),
       builder: (context, animatedBgColor, child) {
         
-        // 2. Animação da Cor do Texto
         return TweenAnimationBuilder<Color?>(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 400),
           curve: Curves.easeInOut,
           tween: ColorTween(
             begin: Colors.black, 
-            end: _textColor // Destino da cor do texto
+            end: _textColor
           ),
           builder: (context, animatedTextColor, _) {
             
             return Scaffold(
-              backgroundColor: animatedBgColor, // Fundo animado
+              backgroundColor: animatedBgColor, 
               body: SafeArea(
                 child: Column(
                   children: [
-                    // Passamos as cores animadas para os componentes
                     _buildHeader(
                       bgColor: animatedBgColor!, 
                       textColor: animatedTextColor!
@@ -280,10 +279,10 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: isHighlighted 
-                  ? AppColors.highlightColor.withOpacity(widget.currentTheme == ReadingTheme.dark ? 0.3 : 0.4) 
+                  ? AppTheme.accentGold.withOpacity(widget.currentTheme == ReadingTheme.dark ? 0.3 : 0.4) 
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(4),
-              border: hasNote ? Border(left: BorderSide(color: Colors.orange, width: 3)) : null,
+              border: hasNote ? Border(left: BorderSide(color: _uiActiveColor, width: 3)) : null,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -293,7 +292,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                     style: TextStyle(
                       fontSize: _fontSize,
                       height: 1.6,
-                      color: animatedTextColor, // Usa a cor animada
+                      color: animatedTextColor, 
                       fontFamily: 'Georgia',
                     ),
                     children: [
@@ -315,7 +314,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                     padding: const EdgeInsets.only(top: 8, left: 4),
                     child: Row(
                       children: [
-                        const Icon(Icons.note, size: 14, color: Colors.orange),
+                        Icon(Icons.note, size: 14, color: _uiActiveColor),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
@@ -400,7 +399,8 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
   Widget _buildLoadingSkeleton() {
     return Center(
       child: CircularProgressIndicator(
-        color: widget.currentTheme == ReadingTheme.sepia ? AppColors.sepiaAccent : Colors.blueGrey,
+        // Alterado para Dourado
+        color: widget.currentTheme == ReadingTheme.sepia ? AppColors.sepiaAccent : _uiActiveColor,
       ),
     );
   }
@@ -413,7 +413,11 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
           Icon(Icons.wifi_off, size: 64, color: textColor.withOpacity(0.3)),
           const SizedBox(height: 16),
           Text('Não foi possível carregar.', style: TextStyle(color: textColor)),
-          TextButton(onPressed: _loadChapter, child: const Text('Tentar Novamente'))
+          TextButton(
+            onPressed: _loadChapter, 
+            style: TextButton.styleFrom(foregroundColor: _uiActiveColor), // Dourado
+            child: const Text('Tentar Novamente')
+          )
         ],
       ),
     );
@@ -426,7 +430,6 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        // StatefulBuilder para atualizar o modal internamente
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {
             
@@ -469,7 +472,8 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                           min: 12,
                           max: 30,
                           divisions: 18,
-                          activeColor: widget.currentTheme == ReadingTheme.sepia ? AppColors.sepiaAccent : Colors.blue,
+                          // Alterado para Dourado
+                          activeColor: widget.currentTheme == ReadingTheme.sepia ? AppColors.sepiaAccent : _uiActiveColor,
                           inactiveColor: getModalText().withOpacity(0.2),
                           label: _fontSize.round().toString(),
                           onChanged: (val) {
@@ -507,9 +511,8 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     final isSelected = widget.currentTheme == theme;
     return GestureDetector(
       onTap: () {
-        // AVISO AO PAI (HomeScreen) para mudar o tema e a cor da barra
         widget.onThemeChanged(theme);
-        setModalState(() {}); // Atualiza o modal
+        setModalState(() {});
       },
       child: Column(
         children: [
@@ -520,7 +523,8 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                 color: bg,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected ? (theme == ReadingTheme.sepia ? AppColors.sepiaAccent : Colors.blue) : Colors.grey.shade400,
+                  // Alterado para Dourado
+                  color: isSelected ? (theme == ReadingTheme.sepia ? AppColors.sepiaAccent : _uiActiveColor) : Colors.grey.shade400,
                   width: isSelected ? 3 : 1,
                 ),
                 boxShadow: [if(isSelected) BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8)]
@@ -564,8 +568,9 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                     final book = BibleApi.allBooks[index];
                     final isSelected = book == selectedBook;
                     return ListTile(
-                      title: Text(book, style: TextStyle(color: isSelected ? Colors.blue : _textColor, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-                      trailing: isSelected ? const Icon(Icons.check, color: Colors.blue) : null,
+                      // Alterado: Azul para Dourado
+                      title: Text(book, style: TextStyle(color: isSelected ? _uiActiveColor : _textColor, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                      trailing: isSelected ? Icon(Icons.check, color: _uiActiveColor) : null,
                       onTap: () {
                         setState(() {
                           selectedBook = book;
@@ -622,7 +627,8 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                     },
                     child: Container(
                       decoration: BoxDecoration(
-                        color: isSelected ? Colors.blue : _textColor.withOpacity(0.05),
+                        // Alterado: Azul para Dourado
+                        color: isSelected ? _uiActiveColor : _textColor.withOpacity(0.05),
                         borderRadius: BorderRadius.circular(10),
                         border: isSelected ? null : Border.all(color: _textColor.withOpacity(0.1)),
                       ),
@@ -630,7 +636,8 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                         child: Text(
                           '$chapter',
                           style: TextStyle(
-                            color: isSelected ? Colors.white : _textColor,
+                            // Texto preto sobre dourado para contraste, ou normal
+                            color: isSelected ? Colors.black : _textColor,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -730,15 +737,28 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
             filled: true,
             fillColor: _textColor.withOpacity(0.05),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              // Borda dourada ao focar
+              borderSide: BorderSide(color: _uiActiveColor),
+            ),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(context), 
+            style: TextButton.styleFrom(foregroundColor: _textColor),
+            child: const Text('Cancelar')
+          ),
           ElevatedButton(
             onPressed: () {
               setState(() => verses[index]['note'] = controller.text);
               Navigator.pop(context);
             },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _uiActiveColor, // Botão Dourado
+              foregroundColor: Colors.black,   // Texto preto para contraste
+            ),
             child: const Text('Salvar'),
           )
         ],
@@ -752,7 +772,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
         content: Text(msg),
         backgroundColor: isError ? Colors.redAccent : Colors.grey.shade800,
         behavior: SnackBarBehavior.floating,
-        action: action != null ? SnackBarAction(label: 'Tentar', onPressed: action, textColor: Colors.white) : null,
+        action: action != null ? SnackBarAction(label: 'Tentar', onPressed: action, textColor: _uiActiveColor) : null,
       ),
     );
   }
