@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 enum ReadingTheme { light, dark, sepia }
 
 class AppColors {
-  // Tema Sépia (Estilo Papel Antigo)
+  // Tema Sépia (Estilo Papel Antigo - Ajustado para ser mais suave)
   static const sepiaBg = Color(0xFFFBF0D9);
   static const sepiaText = Color(0xFF5F4B32);
   static const sepiaAccent = Color(0xFF8D6E63);
@@ -16,15 +16,20 @@ class AppColors {
   static const navSepia = Color(0xFFF0E4CA); 
   static const navDark = Color(0xFF252525);  
   
-  // Destaque
-  static const highlightColor = Color(0xFFFFD54F);
+  // Destaque (Highlight)
+  static const highlightColor = Color(0xFFFFE082); // Amarelo bem clarinho para o marca-texto
 }
 
 class AppTheme {
   // Cores
-  static const Color creamBackground = Color(0xFFFBF9F5); // Fundo papel
-  static const Color darkBackground = Color(0xFF1A1A1A);  // Fundo dark
-  static const Color accentGold = Color(0xFFD4AF37);      // Dourado clássico
+  static const Color creamBackground = Color(0xFFFBF9F5);
+  static const Color darkBackground = Color(0xFF1A1A1A);
+  
+  // AQUI ESTÁ A MUDANÇA:
+  // Antes era: 0xFFD4AF37 (Dourado escuro/velho)
+  // Agora é: 0xFFFFC107 (Amarelo Ambar Vibrante - Estilo Google/Luz)
+  static const Color accentGold = Color(0xFFFFC107); 
+  
   static const Color textDark = Color(0xFF2D2D2D);
   static const Color textLight = Color(0xFFE0E0E0);
   
@@ -47,9 +52,8 @@ class AppTheme {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(25),
-        borderSide: const BorderSide(color: AppTheme.accentGold, width: 1.5),
+        borderSide: const BorderSide(color: AppTheme.accentGold, width: 2.0),
       ),
     );
   }
 }
-

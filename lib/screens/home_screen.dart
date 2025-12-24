@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Para mudar a cor da barra de status do telemóvel
 import 'bible_screen.dart';
 import 'chatbot_screen.dart';
 import '../utils/theme.dart';
@@ -12,8 +13,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
-
-  // Estado do tema da Bíblia
   ReadingTheme _bibleTheme = ReadingTheme.light;
 
   void _updateBibleTheme(ReadingTheme newTheme) {
@@ -22,109 +21,97 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // Helper para obter cores baseadas no tema
+  Color get _backgroundColor {
+    switch (_bibleTheme) {
+      case ReadingTheme.dark: return AppColors.darkBg;
+      case ReadingTheme.sepia: return AppColors.sepiaBg;
+      default: return Colors.white;
+    }
+  }
+
+  Color get _navBarColor {
+    // Se estiver no Chatbot e for modo escuro do sistema, usa escuro
+    // Caso contrário, respeita o tema da Bíblia
+    final isSystemDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
+    if (_currentIndex == 1 && isSystemDark) return Colors.grey.shade900;
+    
+    switch (_bibleTheme) {
+      case ReadingTheme.sepia: return AppColors.navSepia;
+      case ReadingTheme.dark: return AppColors.navDark;
+      default: return Colors.white;
+    }
+  }
+
+  Color get _contentColor {
+    final isSystemDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
+    if (_currentIndex == 1) return isSystemDark ? Colors.grey.shade400 : Colors.black87;
+
+    switch (_bibleTheme) {
+      case ReadingTheme.dark: return Colors.grey.shade400;
+      case ReadingTheme.sepia: return AppColors.sepiaText;
+      default: return Colors.black87;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // 1. Deteta o sistema do telemóvel
-    final isSystemDark =
-        MediaQuery.of(context).platformBrightness == Brightness.dark;
+    final primaryColor = Colors.yellow.shade800;
 
-    // Cor de destaque (Amarelo) - Itens SELECIONADOS
-    final Color primaryColor = Colors.yellow.shade800;
-
-    // 2. Lógica para a cor de FUNDO da Barra
-    Color? getNavBarBackgroundColor() {
-      if (_currentIndex == 1) {
-        // Aba Chatbot: Segue o sistema
-        return isSystemDark ? Colors.grey.shade900 : Colors.white;
-      }
-      // Aba Bíblia: Segue o tema escolhido
-      switch (_bibleTheme) {
-        case ReadingTheme.sepia:
-          return AppColors.navSepia;
-        case ReadingTheme.dark:
-          return AppColors.navDark;
-        case ReadingTheme.light:
-        default:
-          return Colors.white;
-      }
-    }
-
-    // 3. Lógica para a cor dos ÍCONES/TEXTO (O que pediste para corrigir)
-    Color getContentColor() {
-      // Se estiver na aba Chatbot, contraste padrão do sistema
-      if (_currentIndex == 1) {
-        return isSystemDark ? Colors.grey.shade400 : Colors.black87;
-      }
-
-      // Se estiver na aba Bíblia, contraste personalizado
-      switch (_bibleTheme) {
-        case ReadingTheme.dark:
-          return Colors.grey.shade400; // Cinza claro no fundo escuro
-        case ReadingTheme.sepia:
-          return AppColors
-              .sepiaText; // Castanho escuro no fundo bege (Fica elegante e legível)
-        case ReadingTheme.light:
-        default:
-          return Colors
-              .black87; // Preto quase puro no fundo branco (Resolve o teu problema)
-      }
-    }
-
-    final contentColor = getContentColor();
+    // Ajusta a cor dos ícones da barra de status (bateria, hora, wifi)
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: _backgroundColor,
+      statusBarIconBrightness: _bibleTheme == ReadingTheme.dark ? Brightness.light : Brightness.dark,
+    ));
 
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: [
-          BibleReaderScreen(
-            currentTheme: _bibleTheme,
-            onThemeChanged: _updateBibleTheme,
-          ),
-          const ChatBotScreen(),
-        ],
+      // AQUI ESTÁ O TRUQUE: AnimatedContainer como corpo principal
+      // Ele pinta o fundo de toda a app suavemente
+      backgroundColor: Colors.transparent, 
+      body: AnimatedContainer(
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+        color: _backgroundColor, // A cor de fundo global
+        child: IndexedStack(
+          index: _currentIndex,
+          children: [
+            BibleReaderScreen(
+              currentTheme: _bibleTheme,
+              onThemeChanged: _updateBibleTheme,
+            ),
+            // Se quiseres que o Chatbot tenha fundo próprio, define a cor dentro dele.
+            // Se o Chatbot for transparente, ele herdará a cor sépia/escura daqui.
+            const ChatBotScreen(),
+          ],
+        ),
       ),
 
-      // Usamos NavigationBarTheme para forçar a cor dos textos também
-      // ... dentro do return Scaffold( ...
       bottomNavigationBar: NavigationBarTheme(
         data: NavigationBarThemeData(
-          // Animação suave também para a cor dos ícones/texto
           iconTheme: MaterialStateProperty.resolveWith((states) {
-            // Usamos uma transição simples aqui, ou podemos deixar fixo
-            // para não complicar demais, vamos focar na cor do conteúdo
             final color = states.contains(MaterialState.selected)
                 ? primaryColor
-                : getContentColor();
-            return IconThemeData(
-              color: color,
-              size: 24,
-            ); // Adicionei size para evitar pulos
+                : _contentColor;
+            return IconThemeData(color: color, size: 24);
           }),
           labelTextStyle: MaterialStateProperty.resolveWith((states) {
             final color = states.contains(MaterialState.selected)
                 ? primaryColor
-                : getContentColor();
+                : _contentColor;
             return TextStyle(color: color, fontWeight: FontWeight.w500);
           }),
         ),
-
-        // AQUI COMEÇA A ANIMAÇÃO DO FUNDO DA BARRA
         child: TweenAnimationBuilder<Color?>(
-          duration: const Duration(milliseconds: 200), // Tempo da animação
-          curve: Curves.easeInOut, // Curva de aceleração suave
-          tween: ColorTween(
-            begin: Colors
-                .white, // Valor inicial (pode ser qualquer um, ele ajusta-se logo)
-            end: getNavBarBackgroundColor(), // O DESTINO (a cor do tema atual)
-          ),
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          tween: ColorTween(begin: Colors.white, end: _navBarColor),
           builder: (context, color, child) {
             return NavigationBar(
               selectedIndex: _currentIndex,
-              onDestinationSelected: (index) =>
-                  setState(() => _currentIndex = index),
+              onDestinationSelected: (index) => setState(() => _currentIndex = index),
               height: 80,
               elevation: 0,
-              backgroundColor: color, // A cor animada entra aqui
+              backgroundColor: color,
               indicatorColor: primaryColor.withOpacity(0.15),
               destinations: const [
                 NavigationDestination(
