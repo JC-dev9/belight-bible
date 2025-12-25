@@ -6,8 +6,10 @@ import 'package:http/http.dart' as http;
 import '../utils/theme.dart';
 
 // ============================================================================
-// 1. API DA BÍBLIA
+// 1. API DA BÍBLIA E DEFINIÇÕES
 // ============================================================================
+
+enum HighlightStyle { fundoVersiculo, fundoTexto }
 
 class BibleApi {
   final String translation;
@@ -83,7 +85,9 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
   List<Map<String, dynamic>> verses = [];
   bool _isLoading = true;
 
-  // --- NOVA PARTE: Lista de cores rápidas ---
+  // --- CONTROLE DE ESTILO DE GRIFO ---
+  HighlightStyle _selectedHighlightStyle = HighlightStyle.fundoVersiculo;
+
   final List<Color> _availableColors = [
     AppTheme.accentGold,
     Colors.green.shade300,
@@ -91,7 +95,6 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     Colors.pink.shade300,
   ];
 
-  // Estado de UI Local
   double _fontSize = 18.0;
   final ScrollController _scrollController = ScrollController();
 
@@ -276,7 +279,6 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
       itemBuilder: (context, index) {
         final verse = verses[index];
         
-        // Suporte para cor customizada no destaque
         final highlightValue = verse['highlighted'];
         final Color? highlightColor = highlightValue is Color 
             ? highlightValue 
@@ -284,13 +286,17 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
 
         final hasNote = verse['note'].toString().isNotEmpty;
 
+        // Determina se aplica no fundo do bloco ou do texto
+        final bool isBlock = _selectedHighlightStyle == HighlightStyle.fundoVersiculo;
+        final bool isText = _selectedHighlightStyle == HighlightStyle.fundoTexto;
+
         return GestureDetector(
           onTap: () => _showVerseOptionsModal(index),
           child: Container(
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: highlightColor != null 
+              color: (highlightColor != null && isBlock)
                   ? highlightColor.withOpacity(widget.currentTheme == ReadingTheme.dark ? 0.3 : 0.4) 
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(4),
@@ -306,6 +312,10 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                       height: 1.6,
                       color: animatedTextColor, 
                       fontFamily: 'Georgia',
+                      // Aplica a cor aqui se for o estilo "Fundo Texto"
+                      backgroundColor: (highlightColor != null && isText)
+                          ? highlightColor.withOpacity(0.5)
+                          : null,
                     ),
                     children: [
                       WidgetSpan(
@@ -660,7 +670,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
   }
 
   // ==========================================================================
-  // SEÇÃO DE DESTAQUE: SELETOR AVANÇADO COM PREVIEW
+  // SEÇÃO DE DESTAQUE: SELETOR OFICIAL DE TIPO DE GRIFO
   // ==========================================================================
 
   void _showVerseOptionsModal(int verseIndex) {
@@ -684,13 +694,23 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
               Text('$selectedBook $selectedChapter:${verse['number']}', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _textColor)),
               const SizedBox(height: 20),
               
-              // Barra de Cores com Prévia Rápida e Botão Avançado
+              // --- SELETOR DE ESTILO (Oficial) ---
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildStyleToggleBtn(setModalState, HighlightStyle.fundoVersiculo, "Fundo Bloco", Icons.crop_square),
+                  const SizedBox(width: 12),
+                  _buildStyleToggleBtn(setModalState, HighlightStyle.fundoTexto, "Fundo Texto", Icons.title),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Barra de Cores
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   children: [
-                    // Botão Reset
                     GestureDetector(
                       onTap: () {
                         setState(() => verses[verseIndex]['highlighted'] = false);
@@ -703,7 +723,6 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                         child: Icon(Icons.format_color_reset, size: 20, color: _textColor),
                       ),
                     ),
-                    // Lista de Cores Existentes
                     ..._availableColors.map((color) => GestureDetector(
                       onTap: () {
                         setState(() => verses[verseIndex]['highlighted'] = color);
@@ -718,7 +737,6 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                         ),
                       ),
                     )).toList(),
-                    // BOTAO SELETOR AVANÇADO (Arco-íris)
                     GestureDetector(
                       onTap: () => _showAdvancedColorPicker(verseIndex, setModalState),
                       child: Container(
@@ -762,11 +780,37 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     );
   }
 
-  // DIÁLOGO DO SELETOR AVANÇADO COM PREVIEW
+  // Botão para o seletor de estilo de grifo
+  Widget _buildStyleToggleBtn(StateSetter setModalState, HighlightStyle style, String label, IconData icon) {
+    final isSelected = _selectedHighlightStyle == style;
+    return GestureDetector(
+      onTap: () {
+        setState(() => _selectedHighlightStyle = style);
+        setModalState(() {});
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? _uiActiveColor : _textColor.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 16, color: isSelected ? Colors.black : _textColor),
+            const SizedBox(width: 8),
+            Text(label, style: TextStyle(
+              fontSize: 12, 
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              color: isSelected ? Colors.black : _textColor,
+            )),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showAdvancedColorPicker(int verseIndex, StateSetter setModalState) {
     Color tempColor = Colors.orange.shade200;
-    
-    // Lista de presets para o grid
     final List<Color> presets = [
       ...Colors.primaries.map((c) => c.shade200),
       ...Colors.accents.map((c) => c.withOpacity(0.5)),
@@ -782,12 +826,13 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // ÁREA DE PREVIEW EM TEMPO REAL
-              
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: tempColor.withOpacity(widget.currentTheme == ReadingTheme.dark ? 0.3 : 0.4),
+                  // Preview dinâmico baseado no estilo selecionado
+                  color: (_selectedHighlightStyle == HighlightStyle.fundoVersiculo)
+                    ? tempColor.withOpacity(widget.currentTheme == ReadingTheme.dark ? 0.3 : 0.4)
+                    : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: tempColor),
                 ),
@@ -795,11 +840,17 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                   verses[verseIndex]['text'],
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: _textColor, fontSize: 14, fontStyle: FontStyle.italic),
+                  style: TextStyle(
+                    color: _textColor, 
+                    fontSize: 14, 
+                    fontStyle: FontStyle.italic,
+                    backgroundColor: (_selectedHighlightStyle == HighlightStyle.fundoTexto)
+                      ? tempColor.withOpacity(0.5)
+                      : null,
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
-              // GRID DE CORES
               SizedBox(
                 width: double.maxFinite,
                 height: 200,
@@ -829,8 +880,8 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                   if (!_availableColors.contains(tempColor)) _availableColors.add(tempColor);
                   verses[verseIndex]['highlighted'] = tempColor;
                 });
-                setModalState(() {}); // Atualiza o modal de fundo
-                Navigator.pop(context); // Fecha o dialog
+                setModalState(() {});
+                Navigator.pop(context);
               },
               child: const Text('Aplicar', style: TextStyle(color: Colors.black)),
             ),
@@ -839,8 +890,6 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
       ),
     );
   }
-
-  // --- Fim da seção de Destaque ---
 
   Widget _buildOptionIcon(IconData icon, String label, VoidCallback onTap) {
     return InkWell(
@@ -872,7 +921,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
         content: TextField(
           controller: controller,
           style: TextStyle(color: _textColor),
-          maxLines: 3,
+          maxLines: 10,
           decoration: InputDecoration(
             hintText: 'Escreva sua reflexão...',
             hintStyle: TextStyle(color: _textColor.withOpacity(0.5)),
