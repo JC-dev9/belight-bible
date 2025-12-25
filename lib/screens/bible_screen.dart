@@ -332,23 +332,36 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                   ),
                 ),
                 if (hasNote) 
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8, left: 4),
-                    child: Row(
-                      children: [
-                        Icon(Icons.note, size: 14, color: _uiActiveColor),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            verse['note'],
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontSize: 12, color: animatedTextColor.withOpacity(0.7), fontStyle: FontStyle.italic),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
+  Padding(
+    padding: const EdgeInsets.only(top: 8, left: 4),
+    child: Row(
+      children: [
+        // Ícone de nota clicável
+        GestureDetector(
+          onTap: () => _showNoteBottomSheet(index), // chama o bottom sheet
+          child: Icon(Icons.note, size: 14, color: _uiActiveColor),
+        ),
+        const SizedBox(width: 4),
+        // Preview da nota clicável
+        Expanded(
+          child: GestureDetector(
+            onTap: () => _showNoteBottomSheet(index), // chama o bottom sheet
+            child: Text(
+              verse['note'],
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                color: animatedTextColor.withOpacity(0.7),
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  )
+
               ],
             ),
           ),
@@ -768,7 +781,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                   }),
                   _buildOptionIcon(Icons.edit_note, 'Anotar', () {
                     Navigator.pop(context);
-                    _showNoteDialog(verseIndex);
+                    _showNoteBottomSheet(verseIndex);
                   }),
                 ],
               ),
@@ -911,50 +924,93 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     );
   }
 
-  void _showNoteDialog(int index) {
-    final controller = TextEditingController(text: verses[index]['note']);
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: _backgroundColor,
-        title: Text('Anotação', style: TextStyle(color: _textColor)),
-        content: TextField(
-          controller: controller,
-          style: TextStyle(color: _textColor),
-          maxLines: 10,
-          decoration: InputDecoration(
-            hintText: 'Escreva sua reflexão...',
-            hintStyle: TextStyle(color: _textColor.withOpacity(0.5)),
-            filled: true,
-            fillColor: _textColor.withOpacity(0.05),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: _uiActiveColor),
-            ),
-          ),
+  void _showNoteBottomSheet(int index) {
+  final controller = TextEditingController(text: verses[index]['note']);
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true, // permite que o sheet suba com o teclado
+    backgroundColor: _backgroundColor,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) {
+      return Padding(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 16, // espaço para o teclado
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context), 
-            style: TextButton.styleFrom(foregroundColor: _textColor),
-            child: const Text('Cancelar')
-          ),
-          ElevatedButton(
-            onPressed: () {
-              setState(() => verses[index]['note'] = controller.text);
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _uiActiveColor, 
-              foregroundColor: Colors.black,   
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Título igual ao AlertDialog
+            Text(
+              'Anotação',
+              style: TextStyle(color: _textColor, fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            child: const Text('Salvar'),
-          )
-        ],
-      ),
-    );
-  }
+
+            const SizedBox(height: 12),
+
+            // Campo de texto similar
+            SizedBox(
+              height: 200, // altura do espaço de escrita
+              child: TextField(
+                controller: controller,
+                maxLines: null,
+                expands: true, // ocupa todo o espaço vertical
+                textAlignVertical: TextAlignVertical.top,
+                style: TextStyle(color: _textColor),
+                decoration: InputDecoration(
+                  hintText: 'Escreva sua reflexão...',
+                  hintStyle: TextStyle(color: _textColor.withOpacity(0.5)),
+                  filled: true,
+                  fillColor: _textColor.withOpacity(0.05),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: _uiActiveColor),
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Botões iguais
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(foregroundColor: _textColor),
+                  child: const Text('Cancelar'),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() => verses[index]['note'] = controller.text);
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _uiActiveColor,
+                    foregroundColor: Colors.black,
+                  ),
+                  child: const Text('Salvar'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
 
   void _showSnackBar(String msg, {bool isError = false, VoidCallback? action}) {
     ScaffoldMessenger.of(context).showSnackBar(
