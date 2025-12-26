@@ -1,63 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import '../utils/theme.dart';
+import '../data/bible_repository.dart';
 
 // ============================================================================
-// 1. API DA BÍBLIA E DEFINIÇÕES
+// 1. DEFINIÇÕES
 // ============================================================================
 
 enum HighlightStyle { fundoVersiculo, fundoTexto }
-
-class BibleApi {
-  final String translation;
-
-  BibleApi({this.translation = 'almeida'});
-
-  static final Map<String, int> chaptersPerBook = {
-    'Gênesis': 50, 'Êxodo': 40, 'Levítico': 27, 'Números': 36, 'Deuteronômio': 34,
-    'Josué': 24, 'Juízes': 21, 'Rute': 4, '1 Samuel': 31, '2 Samuel': 24,
-    '1 Reis': 22, '2 Reis': 25, '1 Crônicas': 29, '2 Crônicas': 36, 'Esdras': 10,
-    'Neemias': 13, 'Ester': 10, 'Jó': 42, 'Salmos': 150, 'Provérbios': 31,
-    'Eclesiastes': 12, 'Cantares': 8, 'Isaías': 66, 'Jeremias': 52, 'Lamentações': 5,
-    'Ezequiel': 48, 'Daniel': 12, 'Oseias': 14, 'Joel': 3, 'Amós': 9,
-    'Obadias': 1, 'Jonas': 4, 'Miqueias': 7, 'Naum': 3, 'Habacuque': 3,
-    'Sofonias': 3, 'Ageu': 2, 'Zacarias': 14, 'Malaquias': 4,
-    'Mateus': 28, 'Marcos': 16, 'Lucas': 24, 'João': 21, 'Atos': 28,
-    'Romanos': 16, '1 Coríntios': 16, '2 Coríntios': 13, 'Gálatas': 6, 'Efésios': 6,
-    'Filipenses': 4, 'Colossenses': 4, '1 Tessalonicenses': 5, '2 Tessalonicenses': 3,
-    '1 Timóteo': 6, '2 Timóteo': 4, 'Tito': 3, 'Filemom': 1, 'Hebreus': 13,
-    'Tiago': 5, '1 Pedro': 5, '2 Pedro': 3, '1 João': 5, '2 João': 1,
-    '3 João': 1, 'Judas': 1, 'Apocalipse': 22,
-  };
-
-  static List<String> get allBooks => chaptersPerBook.keys.toList();
-
-  Future<List<Map<String, dynamic>>> fetchChapter(String book, int chapter) async {
-    final url = Uri.parse(
-        'https://bible-api.com/${Uri.encodeComponent(book)} $chapter?translation=$translation');
-
-    try {
-      final response = await http.get(url);
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['verses'] != null) {
-          return List<Map<String, dynamic>>.from(data['verses'].map((v) => {
-                'number': v['verse'],
-                'text': v['text'].toString().trim(),
-                'highlighted': false,
-                'note': '',
-              }));
-        }
-      }
-      return [];
-    } catch (e) {
-      throw Exception('Falha na conexão');
-    }
-  }
-}
 
 // ============================================================================
 // 2. TELA DA BÍBLIA
@@ -68,9 +19,9 @@ class BibleReaderScreen extends StatefulWidget {
   final Function(ReadingTheme) onThemeChanged;
 
   const BibleReaderScreen({
-    super.key, 
-    required this.currentTheme, 
-    required this.onThemeChanged
+    super.key,
+    required this.currentTheme,
+    required this.onThemeChanged,
   });
 
   @override
@@ -79,7 +30,7 @@ class BibleReaderScreen extends StatefulWidget {
 
 class _BibleReaderScreenState extends State<BibleReaderScreen> {
   // Estado de Dados
-  final BibleApi _api = BibleApi(translation: 'almeida');
+  late BibleRepository _repo;
   String selectedBook = 'Gênesis';
   int selectedChapter = 1;
   List<Map<String, dynamic>> verses = [];
@@ -101,7 +52,22 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
   @override
   void initState() {
     super.initState();
-    _loadChapter();
+    // Inicializa com a versão padrão
+    _repo = BibleRepository(version: 'acf'); 
+    _loadInitialData();
+  }
+
+  Future<void> _loadInitialData() async {
+    setState(() => _isLoading = true);
+    try {
+      // Garante que o repositório carregue o JSON (seja local ou baixado)
+      await _repo.ensureLoaded();
+      await _loadChapter();
+    } catch (e) {
+      // Se der erro (ex: arquivo não existe), paramos o loading
+      setState(() => _isLoading = false);
+      _showSnackBar('Erro ao carregar dados. Verifique a versão.', isError: true);
+    }
   }
 
   @override
@@ -111,29 +77,35 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
   }
 
   // --- Lógica de Dados ---
-
   Future<void> _loadChapter() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
+    
     try {
-      final newVerses = await _api.fetchChapter(selectedBook, selectedChapter);
+      final newVerses = await _repo.getChapter(selectedBook, selectedChapter);
       setState(() {
         verses = newVerses;
         _isLoading = false;
       });
+      
       if (_scrollController.hasClients) {
-        _scrollController.jumpTo(0);
+        _scrollController.animateTo(0, 
+          duration: const Duration(milliseconds: 300), 
+          curve: Curves.easeOut
+        );
       }
     } catch (e) {
+      debugPrint("Erro no _loadChapter: $e");
       setState(() {
         _isLoading = false;
         verses = [];
       });
-      _showSnackBar('Erro de conexão.', isError: true, action: _loadChapter);
+      _showSnackBar('Erro ao carregar capítulo.', isError: true, action: _loadChapter);
     }
   }
 
   void _navigateChapter(int delta) {
-    final maxChapters = BibleApi.chaptersPerBook[selectedBook] ?? 1;
+    final maxChapters = _repo.chaptersPerBook[selectedBook] ?? 1;
     final newChapter = selectedChapter + delta;
 
     if (newChapter >= 1 && newChapter <= maxChapters) {
@@ -142,6 +114,44 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     } else if (newChapter > maxChapters) {
       _showSnackBar('Último capítulo de $selectedBook.');
     }
+  }
+
+  // --- Nova Lógica: Seletor de Versão ---
+  void _showVersionSelector() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _backgroundColor,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Versão da Bíblia', style: TextStyle(color: _textColor, fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
+              ...BibleRepository.availableVersions.entries.map((entry) {
+                final isSelected = _repo.version == entry.key;
+                return ListTile(
+                  title: Text(entry.value, style: TextStyle(color: _textColor, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                  trailing: isSelected ? Icon(Icons.check, color: _uiActiveColor) : null,
+                  onTap: () async {
+                    Navigator.pop(context);
+                    if (isSelected) return;
+                    
+                    // Atualiza a versão no repositório
+                    _repo.version = entry.key;
+                    
+                    // Recarrega os dados (o LocalBibleLoader vai decidir se lê do asset ou do disco)
+                    await _loadInitialData();
+                  },
+                );
+              }),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   // --- Helpers de Estilo ---
@@ -184,7 +194,6 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
         end: _backgroundColor, 
       ),
       builder: (context, animatedBgColor, child) {
-        
         return TweenAnimationBuilder<Color?>(
           duration: const Duration(milliseconds: 400),
           curve: Curves.easeInOut,
@@ -193,7 +202,6 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
             end: _textColor
           ),
           builder: (context, animatedTextColor, _) {
-            
             return Scaffold(
               backgroundColor: animatedBgColor, 
               body: SafeArea(
@@ -203,7 +211,6 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                       bgColor: animatedBgColor!, 
                       textColor: animatedTextColor!
                     ),
-                    
                     Expanded(
                       child: _isLoading
                           ? _buildLoadingSkeleton()
@@ -211,7 +218,6 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                               ? _buildErrorState(animatedTextColor)
                               : _buildVersesList(animatedTextColor),
                     ),
-                    
                     _buildBottomControls(
                       bgColor: animatedBgColor, 
                       textColor: animatedTextColor
@@ -236,11 +242,21 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          IconButton(
-            icon: Icon(Icons.text_format, color: textColor),
-            onPressed: _showDisplaySettings,
-            tooltip: 'Ajustar texto',
+          // Botão de Versão (NOVO)
+          TextButton(
+            onPressed: _showVersionSelector,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              backgroundColor: textColor.withOpacity(0.05),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            ),
+            child: Text(
+              _repo.version.toUpperCase(), 
+              style: TextStyle(color: _uiActiveColor, fontWeight: FontWeight.bold)
+            ),
           ),
+          
+          // Seletor de Livro
           GestureDetector(
             onTap: _showBookSelector,
             child: Container(
@@ -261,9 +277,12 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
               ),
             ),
           ),
+
+          // Configurações
           IconButton(
-            icon: Icon(Icons.search, color: textColor),
-            onPressed: () => _showSnackBar('Busca em breve!'),
+            icon: Icon(Icons.text_format, color: textColor),
+            onPressed: _showDisplaySettings,
+            tooltip: 'Ajustar texto',
           ),
         ],
       ),
@@ -278,15 +297,12 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
       physics: const BouncingScrollPhysics(),
       itemBuilder: (context, index) {
         final verse = verses[index];
-        
         final highlightValue = verse['highlighted'];
         final Color? highlightColor = highlightValue is Color 
             ? highlightValue 
             : (highlightValue == true ? AppTheme.accentGold : null);
 
-        final hasNote = verse['note'].toString().isNotEmpty;
-
-        // Determina se aplica no fundo do bloco ou do texto
+        final hasNote = verse['note'] != null && verse['note'].toString().isNotEmpty;
         final bool isBlock = _selectedHighlightStyle == HighlightStyle.fundoVersiculo;
         final bool isText = _selectedHighlightStyle == HighlightStyle.fundoTexto;
 
@@ -312,7 +328,6 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                       height: 1.6,
                       color: animatedTextColor, 
                       fontFamily: 'Georgia',
-                      // Aplica a cor aqui se for o estilo "Fundo Texto"
                       backgroundColor: (highlightColor != null && isText)
                           ? highlightColor.withOpacity(0.5)
                           : null,
@@ -332,36 +347,33 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                   ),
                 ),
                 if (hasNote) 
-  Padding(
-    padding: const EdgeInsets.only(top: 8, left: 4),
-    child: Row(
-      children: [
-        // Ícone de nota clicável
-        GestureDetector(
-          onTap: () => _showNoteBottomSheet(index), // chama o bottom sheet
-          child: Icon(Icons.note, size: 14, color: _uiActiveColor),
-        ),
-        const SizedBox(width: 4),
-        // Preview da nota clicável
-        Expanded(
-          child: GestureDetector(
-            onTap: () => _showNoteBottomSheet(index), // chama o bottom sheet
-            child: Text(
-              verse['note'],
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 12,
-                color: animatedTextColor.withOpacity(0.7),
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ),
-        ),
-      ],
-    ),
-  )
-
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8, left: 4),
+                    child: Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => _showNoteBottomSheet(index), 
+                          child: Icon(Icons.note, size: 14, color: _uiActiveColor),
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => _showNoteBottomSheet(index),
+                            child: Text(
+                              verse['note'],
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: animatedTextColor.withOpacity(0.7),
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
               ],
             ),
           ),
@@ -372,7 +384,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
 
   Widget _buildBottomControls({required Color bgColor, required Color textColor}) {
     final isFirst = selectedChapter == 1;
-    final maxChapters = BibleApi.chaptersPerBook[selectedBook] ?? 1;
+    final maxChapters = _repo.chaptersPerBook[selectedBook] ?? 1;
     final isLast = selectedChapter == maxChapters;
 
     return Container(
@@ -446,9 +458,9 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
         children: [
           Icon(Icons.wifi_off, size: 64, color: textColor.withOpacity(0.3)),
           const SizedBox(height: 16),
-          Text('Não foi possível carregar.', style: TextStyle(color: textColor)),
+          Text('Não foi possível carregar os dados.', style: TextStyle(color: textColor)),
           TextButton(
-            onPressed: _loadChapter, 
+            onPressed: _loadInitialData, 
             style: TextButton.styleFrom(foregroundColor: _uiActiveColor),
             child: const Text('Tentar Novamente')
           )
@@ -510,7 +522,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                           inactiveColor: getModalText().withOpacity(0.2),
                           label: _fontSize.round().toString(),
                           onChanged: (val) {
-                            this.setState(() => _fontSize = val);
+                            setState(() => _fontSize = val);
                             setModalState(() {}); 
                           },
                         ),
@@ -595,9 +607,9 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
               Expanded(
                 child: ListView.builder(
                   controller: controller,
-                  itemCount: BibleApi.allBooks.length,
+                  itemCount: _repo.allBooks.length,
                   itemBuilder: (context, index) {
-                    final book = BibleApi.allBooks[index];
+                    final book = _repo.allBooks[index];
                     final isSelected = book == selectedBook;
                     return ListTile(
                       title: Text(book, style: TextStyle(color: isSelected ? _uiActiveColor : _textColor, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
@@ -622,7 +634,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
   }
 
   void _showChapterSelector() {
-    final maxChapters = BibleApi.chaptersPerBook[selectedBook] ?? 1;
+    final maxChapters = _repo.chaptersPerBook[selectedBook] ?? 1;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -682,10 +694,6 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     );
   }
 
-  // ==========================================================================
-  // SEÇÃO DE DESTAQUE: SELETOR OFICIAL DE TIPO DE GRIFO
-  // ==========================================================================
-
   void _showVerseOptionsModal(int verseIndex) {
     final verse = verses[verseIndex];
     
@@ -707,7 +715,6 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
               Text('$selectedBook $selectedChapter:${verse['number']}', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _textColor)),
               const SizedBox(height: 20),
               
-              // --- SELETOR DE ESTILO (Oficial) ---
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -718,7 +725,6 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Barra de Cores
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -726,7 +732,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                   children: [
                     GestureDetector(
                       onTap: () {
-                        setState(() => verses[verseIndex]['highlighted'] = false);
+                        setState(() => verses[verseIndex]['highlighted'] = null);
                         Navigator.pop(context);
                       },
                       child: Container(
@@ -793,7 +799,6 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     );
   }
 
-  // Botão para o seletor de estilo de grifo
   Widget _buildStyleToggleBtn(StateSetter setModalState, HighlightStyle style, String label, IconData icon) {
     final isSelected = _selectedHighlightStyle == style;
     return GestureDetector(
@@ -842,7 +847,6 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  // Preview dinâmico baseado no estilo selecionado
                   color: (_selectedHighlightStyle == HighlightStyle.fundoVersiculo)
                     ? tempColor.withOpacity(widget.currentTheme == ReadingTheme.dark ? 0.3 : 0.4)
                     : Colors.transparent,
@@ -925,92 +929,68 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
   }
 
   void _showNoteBottomSheet(int index) {
-  final controller = TextEditingController(text: verses[index]['note']);
+    final controller = TextEditingController(text: verses[index]['note']);
 
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true, // permite que o sheet suba com o teclado
-    backgroundColor: _backgroundColor,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (context) {
-      return Padding(
-        padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 16,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 16, // espaço para o teclado
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Título igual ao AlertDialog
-            Text(
-              'Anotação',
-              style: TextStyle(color: _textColor, fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-
-            const SizedBox(height: 12),
-
-            // Campo de texto similar
-            SizedBox(
-              height: 200, // altura do espaço de escrita
-              child: TextField(
-                controller: controller,
-                maxLines: null,
-                expands: true, // ocupa todo o espaço vertical
-                textAlignVertical: TextAlignVertical.top,
-                style: TextStyle(color: _textColor),
-                decoration: InputDecoration(
-                  hintText: 'Escreva sua reflexão...',
-                  hintStyle: TextStyle(color: _textColor.withOpacity(0.5)),
-                  filled: true,
-                  fillColor: _textColor.withOpacity(0.05),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: _uiActiveColor),
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: _backgroundColor,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 16, right: 16, top: 16,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Anotação', style: TextStyle(color: _textColor, fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 200,
+                child: TextField(
+                  controller: controller,
+                  maxLines: null,
+                  expands: true,
+                  textAlignVertical: TextAlignVertical.top,
+                  style: TextStyle(color: _textColor),
+                  decoration: InputDecoration(
+                    hintText: 'Escreva sua reflexão...',
+                    hintStyle: TextStyle(color: _textColor.withOpacity(0.5)),
+                    filled: true,
+                    fillColor: _textColor.withOpacity(0.05),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: _uiActiveColor)),
                   ),
                 ),
               ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Botões iguais
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: TextButton.styleFrom(foregroundColor: _textColor),
-                  child: const Text('Cancelar'),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() => verses[index]['note'] = controller.text);
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _uiActiveColor,
-                    foregroundColor: Colors.black,
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(foregroundColor: _textColor),
+                    child: const Text('Cancelar'),
                   ),
-                  child: const Text('Salvar'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
-
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() => verses[index]['note'] = controller.text);
+                      Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: _uiActiveColor, foregroundColor: Colors.black),
+                    child: const Text('Salvar'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   void _showSnackBar(String msg, {bool isError = false, VoidCallback? action}) {
     ScaffoldMessenger.of(context).showSnackBar(

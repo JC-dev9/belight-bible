@@ -15,6 +15,8 @@ dependencies:
   share_plus: ^7.2.1
   http: ^1.5.0
   hive_flutter: ^1.1.0
+  dio: ^5.4.0
+  path_provider: ^2.1.2
 
 dev_dependencies:
   flutter_test:
@@ -25,7 +27,6 @@ flutter:
   uses-material-design: true
 
   assets:
-    - lib/assets/logo.png
-    - lib/assets/bible/pt_nvi.json
-
-
+    - assets/bible/acf.json
+    - assets/bible/arc.json
+    - assets/bible/ntlh.json
