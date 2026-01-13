@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import '../utils/theme.dart';
 import '../data/bible_repository.dart';
+import 'chatbot_screen.dart';
 
 // ============================================================================
 // 1. DEFINIÇÕES
@@ -788,6 +789,16 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                   _buildOptionIcon(Icons.edit_note, 'Anotar', () {
                     Navigator.pop(context);
                     _showNoteBottomSheet(verseIndex);
+                  }),
+                  _buildOptionIcon(Icons.psychology, 'Perguntar a IA', () {
+                    Navigator.pop(context);
+                    final prompt = 'Gostaria de saber mais sobre este versículo: "$selectedBook $selectedChapter:${verse['number']} - ${verse['text']}". O que ele significa?';
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChatBotScreen(initialPrompt: prompt),
+                      ),
+                    );
                   }),
                 ],
               ),

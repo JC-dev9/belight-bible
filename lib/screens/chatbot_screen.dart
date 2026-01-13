@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 class ChatBotScreen extends StatefulWidget {
-  const ChatBotScreen({super.key});
+  final String? initialPrompt;
+
+  const ChatBotScreen({super.key, this.initialPrompt});
 
   @override
   State<ChatBotScreen> createState() => _ChatBotScreenState();
@@ -15,6 +17,18 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
   final List<_ChatMessage> _messages = [];
 
   bool _isSending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialPrompt != null && widget.initialPrompt!.isNotEmpty) {
+      _controller.text = widget.initialPrompt!;
+      // Agenda o envio para logo após o build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _sendMessage();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
