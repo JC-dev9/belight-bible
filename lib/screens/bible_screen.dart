@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 import '../utils/theme.dart';
 import '../data/bible_repository.dart';
 import 'chatbot_screen.dart';
+import 'note_editor_screen.dart';
 
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
@@ -1326,68 +1327,36 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
 
 
 
-  void _showNoteBottomSheet(int index) {
-    final controller = TextEditingController(text: verses[index]['note']);
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: _backgroundColor,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 16, right: 16, top: 16,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Anotação', style: TextStyle(color: _textColor, fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 200,
-                child: TextField(
-                  controller: controller,
-                  maxLines: null,
-                  expands: true,
-                  textAlignVertical: TextAlignVertical.top,
-                  style: TextStyle(color: _textColor),
-                  decoration: InputDecoration(
-                    hintText: 'Escreva sua reflexão...',
-                    hintStyle: TextStyle(color: _textColor.withOpacity(0.5)),
-                    filled: true,
-                    fillColor: _textColor.withOpacity(0.05),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: _uiActiveColor)),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: TextButton.styleFrom(foregroundColor: _textColor),
-                    child: const Text('Cancelar'),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: () {
-                      setState(() => verses[index]['note'] = controller.text);
-                      Navigator.pop(context);
-                    },
-                    style: ElevatedButton.styleFrom(backgroundColor: _uiActiveColor, foregroundColor: Colors.black),
-                    child: const Text('Salvar'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
+  void _showNoteBottomSheet(int index) async {
+    final note = verses[index]['note'];
+    final verseNumber = verses[index]['number'];
+    final verseText = verses[index]['text'];
+    
+    // Navega para a tela de editor
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NoteEditorScreen(
+          book: selectedBook,
+          chapter: selectedChapter,
+          verseNumber: verseNumber,
+          verseText: verseText,
+          initialNote: note,
+          backgroundColor: _backgroundColor, // Passando tema atual
+          textColor: _textColor,
+          accentColor: _uiActiveColor,
+        ),
+      ),
     );
+
+    // Se retornou algo (JSON string), salva. 
+    // Se retornou null, o usuário apenas voltou sem salvar.
+    if (result != null && result is String) {
+      setState(() {
+        verses[index]['note'] = result;
+      });
+      _showSnackBar('Anotação salva');
+    }
   }
 
   void _showSnackBar(String msg, {bool isError = false, VoidCallback? action}) {

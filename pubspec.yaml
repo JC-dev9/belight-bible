@@ -19,6 +19,9 @@ dependencies:
   hive_flutter: ^1.1.0
   dio: ^5.4.0
   path_provider: ^2.1.2
+  flutter_quill: ^11.5.0
+  flutter_localizations:
+    sdk: flutter
 
 dev_dependencies:
   flutter_test:
