@@ -14,10 +14,37 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   ReadingTheme _bibleTheme = ReadingTheme.light;
+  
+  // Key para acessar o estado do ChatBot
+  final GlobalKey<ChatBotScreenState> _chatBotKey = GlobalKey<ChatBotScreenState>();
+  // Key para acessar o estado da Bíblia
+  final GlobalKey<BibleReaderScreenState> _bibleKey = GlobalKey<BibleReaderScreenState>();
 
   void _updateBibleTheme(ReadingTheme newTheme) {
     setState(() {
       _bibleTheme = newTheme;
+    });
+  }
+
+  void _switchToChatbot(String prompt) {
+    setState(() {
+      _currentIndex = 1; // Muda para a tab do Chatbot
+    });
+    
+    // Pequeno delay para garantir que a tab mudou e o widget foi montado/exibido
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _chatBotKey.currentState?.sendPrompt(prompt);
+    });
+  }
+
+  void _navigateToVerse(String book, int chapter, int verse) {
+    setState(() {
+      _currentIndex = 0; // Muda para a tab da Bíblia
+    });
+
+    // Aguarda a troca de tab e chama o jump
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _bibleKey.currentState?.jumpToVerse(book, chapter, verse);
     });
   }
 
@@ -76,12 +103,17 @@ class _HomeScreenState extends State<HomeScreen> {
           index: _currentIndex,
           children: [
             BibleReaderScreen(
+              key: _bibleKey,
               currentTheme: _bibleTheme,
               onThemeChanged: _updateBibleTheme,
+              onAskAI: _switchToChatbot, // Passando a callback
             ),
             // Se quiseres que o Chatbot tenha fundo próprio, define a cor dentro dele.
             // Se o Chatbot for transparente, ele herdará a cor sépia/escura daqui.
-            const ChatBotScreen(),
+            ChatBotScreen(
+              key: _chatBotKey, 
+              onNavigateToVerse: _navigateToVerse
+            ), // Atribuindo a Key
           ],
         ),
       ),

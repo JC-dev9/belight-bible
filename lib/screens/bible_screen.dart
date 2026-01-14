@@ -5,6 +5,8 @@ import '../utils/theme.dart';
 import '../data/bible_repository.dart';
 import 'chatbot_screen.dart';
 
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+
 // ============================================================================
 // 1. DEFINIÇÕES
 // ============================================================================
@@ -18,18 +20,20 @@ enum HighlightStyle { fundoVersiculo, fundoTexto }
 class BibleReaderScreen extends StatefulWidget {
   final ReadingTheme currentTheme;
   final Function(ReadingTheme) onThemeChanged;
+  final Function(String)? onAskAI; // Callback para navegar para o chat
 
   const BibleReaderScreen({
     super.key,
     required this.currentTheme,
     required this.onThemeChanged,
+    this.onAskAI,
   });
 
   @override
-  State<BibleReaderScreen> createState() => _BibleReaderScreenState();
+  State<BibleReaderScreen> createState() => BibleReaderScreenState();
 }
 
-class _BibleReaderScreenState extends State<BibleReaderScreen> {
+class BibleReaderScreenState extends State<BibleReaderScreen> {
   // Estado de Dados
   late BibleRepository _repo;
   String selectedBook = 'Gênesis';
@@ -48,7 +52,20 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
   ];
 
   double _fontSize = 18.0;
-  final ScrollController _scrollController = ScrollController();
+  // Substituindo ScrollController por ItemScrollController
+  final ItemScrollController _itemScrollController = ItemScrollController();
+  final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
+
+  // Highlight temporário para navegação profunda
+  int? _focusedVerseIndex;
+
+  void _clearFocus() {
+    if (_focusedVerseIndex != null) {
+      setState(() {
+        _focusedVerseIndex = null;
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -56,6 +73,36 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     // Inicializa com a versão padrão
     _repo = BibleRepository(version: 'acf'); 
     _loadInitialData();
+  }
+
+  // Método público para navegar para um versículo específico
+  Future<void> jumpToVerse(String book, int chapter, int verse) async {
+    // 1. Atualiza livro e capítulo se necessário
+    if (selectedBook != book || selectedChapter != chapter) {
+      setState(() {
+        selectedBook = book;
+        selectedChapter = chapter;
+      });
+      await _loadChapter();
+    }
+
+    // 2. Aguarda um pouco para a lista ser construída com os novos versículos
+    // (O _loadChapter já faz setState, mas garantir renderização é bom)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (verses.isNotEmpty && verse > 0 && verse <= verses.length) {
+        
+        setState(() {
+          _focusedVerseIndex = verse - 1;
+        });
+
+        _itemScrollController.scrollTo(
+          index: verse - 1,
+          duration: const Duration(milliseconds: 500), // Mais rápido
+          curve: Curves.easeInOutCubic,
+          alignment: 0.3, // Tenta posicionar um pouco abaixo do topo para dar contexto
+        );
+      }
+    });
   }
 
   Future<void> _loadInitialData() async {
@@ -73,7 +120,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    // _scrollController.dispose(); // Não precisa dispose no ItemScrollController
     super.dispose();
   }
 
@@ -89,12 +136,16 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
         _isLoading = false;
       });
       
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(0, 
-          duration: const Duration(milliseconds: 300), 
-          curve: Curves.easeOut
-        );
+      // Reset scroll (com ItemScrollController, geralmente começa do 0, 
+      // mas podemos forçar se mudou de capítulo manualmente)
+      if (verses.isNotEmpty) {
+         try {
+           _itemScrollController.jumpTo(index: 0);
+         } catch (e) {
+           // Pode falhar se não estiver anexado ainda, o que é OK no load inicial
+         }
       }
+
     } catch (e) {
       debugPrint("Erro no _loadChapter: $e");
       setState(() {
@@ -291,62 +342,85 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
   }
 
   Widget _buildVersesList(Color animatedTextColor) {
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 80),
-      itemCount: verses.length,
-      physics: const BouncingScrollPhysics(),
-      itemBuilder: (context, index) {
-        final verse = verses[index];
-        final highlightValue = verse['highlighted'];
-        final Color? highlightColor = highlightValue is Color 
-            ? highlightValue 
-            : (highlightValue == true ? AppTheme.accentGold : null);
+    return Listener(
+      onPointerDown: (_) => _clearFocus(),
+      child: ScrollablePositionedList.builder(
+        itemScrollController: _itemScrollController,
+        itemPositionsListener: _itemPositionsListener,
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 80),
+        itemCount: verses.length,
+        physics: const BouncingScrollPhysics(),
+        itemBuilder: (context, index) {
+          final verse = verses[index];
+          final highlightValue = verse['highlighted'];
+          final Color? highlightColor = highlightValue is Color 
+              ? highlightValue 
+              : (highlightValue == true ? AppTheme.accentGold : null);
 
-        final hasNote = verse['note'] != null && verse['note'].toString().isNotEmpty;
-        final bool isBlock = _selectedHighlightStyle == HighlightStyle.fundoVersiculo;
-        final bool isText = _selectedHighlightStyle == HighlightStyle.fundoTexto;
+          final hasNote = verse['note'] != null && verse['note'].toString().isNotEmpty;
+          final bool isBlock = _selectedHighlightStyle == HighlightStyle.fundoVersiculo;
+          final bool isText = _selectedHighlightStyle == HighlightStyle.fundoTexto;
+          
+          // Lógica de Foco (Dimming)
+          final bool isFocused = _focusedVerseIndex == index;
+          final bool isDimmed = _focusedVerseIndex != null && !isFocused;
+          
+          final double opacity = isDimmed ? 0.3 : 1.0;
+          // Se estiver focado, pode ter um estilo extra, senao usa o calculo padrao
+          final Color textColorWithFocus = animatedTextColor.withOpacity(isDimmed ? 0.3 : 1.0);
 
-        return GestureDetector(
-          onTap: () => _showVerseOptionsModal(index),
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: (highlightColor != null && isBlock)
-                  ? highlightColor.withOpacity(widget.currentTheme == ReadingTheme.dark ? 0.3 : 0.4) 
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(4),
-              border: hasNote ? Border(left: BorderSide(color: _uiActiveColor, width: 3)) : null,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                RichText(
-                  text: TextSpan(
-                    style: TextStyle(
-                      fontSize: _fontSize,
-                      height: 1.6,
-                      color: animatedTextColor, 
-                      fontFamily: 'Georgia',
-                      backgroundColor: (highlightColor != null && isText)
-                          ? highlightColor.withOpacity(0.5)
-                          : null,
-                    ),
-                    children: [
-                      WidgetSpan(
-                        child: Transform.translate(
-                          offset: const Offset(0, -4),
-                          child: Text(
-                            '${verse['number']} ',
-                            style: TextStyle(fontSize: _fontSize * 0.6, fontWeight: FontWeight.bold, color: _verseNumColor),
+          return GestureDetector(
+            onTap: () {
+               // Se estava focado, o listener do pai ja limpou, entao podemos abrir o modal
+               // Se nao estava focado, abre modal normal
+               _showVerseOptionsModal(index);
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8), // Pouco mais de padding vertical
+              decoration: BoxDecoration(
+                color: (highlightColor != null && isBlock)
+                    ? highlightColor.withOpacity(widget.currentTheme == ReadingTheme.dark ? 0.3 : 0.4).withOpacity(isDimmed ? 0.1 : (widget.currentTheme == ReadingTheme.dark ? 0.3 : 0.4))
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+                border: Border(
+                  left: hasNote ? BorderSide(color: _uiActiveColor.withOpacity(opacity), width: 3) : BorderSide.none,
+                  bottom: isFocused ? BorderSide(color: _uiActiveColor, width: 2) : BorderSide.none,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  RichText(
+                    text: TextSpan(
+                      style: TextStyle(
+                        fontSize: _fontSize,
+                        height: 1.6,
+                        color: textColorWithFocus, 
+                        fontFamily: 'Georgia',
+                        backgroundColor: (highlightColor != null && isText)
+                            ? highlightColor.withOpacity(0.5).withOpacity(isDimmed ? 0.1 : 0.5)
+                            : null,
+                      ),
+                      children: [
+                        WidgetSpan(
+                          child: Transform.translate(
+                            offset: const Offset(0, -4),
+                            child: Text(
+                              '${verse['number']} ',
+                              style: TextStyle(
+                                fontSize: _fontSize * 0.6, 
+                                fontWeight: FontWeight.bold, 
+                                color: _verseNumColor.withOpacity(opacity)
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                      TextSpan(text: verse['text']),
-                    ],
+                        TextSpan(text: verse['text']),
+                      ],
+                    ),
                   ),
-                ),
                 if (hasNote) 
                   Padding(
                     padding: const EdgeInsets.only(top: 8, left: 4),
@@ -380,6 +454,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
           ),
         );
       },
+      ),
     );
   }
 
@@ -793,12 +868,18 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                   _buildOptionIcon(Icons.psychology, 'Perguntar a IA', () {
                     Navigator.pop(context);
                     final prompt = 'Gostaria de saber mais sobre este versículo: "$selectedBook $selectedChapter:${verse['number']} - ${verse['text']}". O que ele significa?';
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ChatBotScreen(initialPrompt: prompt),
-                      ),
-                    );
+                    
+                    if (widget.onAskAI != null) {
+                      widget.onAskAI!(prompt);
+                    } else {
+                      // Fallback safe caso não haja callback
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ChatBotScreen(initialPrompt: prompt),
+                        ),
+                      );
+                    }
                   }),
                 ],
               ),
