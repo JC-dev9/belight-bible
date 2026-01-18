@@ -70,7 +70,7 @@ class _SavedDataScreenState extends State<SavedDataScreen> with SingleTickerProv
     return Scaffold(
       backgroundColor: _backgroundColor,
       appBar: AppBar(
-        title: Text("Meus Dados", style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
+        title: Text("Salvos", style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
         backgroundColor: _backgroundColor,
         elevation: 0,
         centerTitle: false,

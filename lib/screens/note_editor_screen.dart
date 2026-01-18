@@ -98,6 +98,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
 
     final noteData = {
       'delta': delta,
+      'plainText': _controller.document.toPlainText(),
       'title': title.isNotEmpty ? title : null,
       'hasTitle': title.isNotEmpty,
       'updatedAt': DateTime.now().toIso8601String(),

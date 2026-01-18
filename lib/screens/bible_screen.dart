@@ -1422,8 +1422,10 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
           if (jsonMap.containsKey('title')) {
              title = jsonMap['title'];
           }
-          if (jsonMap.containsKey('delta')) {
-            // Extrai apenas o delta para salvar no content
+          if (jsonMap.containsKey('plainText')) {
+             contentToSave = jsonMap['plainText'];
+          } else if (jsonMap.containsKey('delta')) {
+            // Fallback: se não tiver plainText, usa o delta (mas o editor atualizado deve mandar plainText)
              contentToSave = jsonEncode(jsonMap['delta']);
           }
         }
