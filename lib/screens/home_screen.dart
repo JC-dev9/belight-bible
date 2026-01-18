@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Para mudar a cor da barra de status do telemóvel
 import 'bible_screen.dart';
 import 'chatbot_screen.dart';
+import 'saved_data_screen.dart';
 import '../utils/theme.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -58,10 +59,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Color get _navBarColor {
-    // Se estiver no Chatbot e for modo escuro do sistema, usa escuro
-    // Caso contrário, respeita o tema da Bíblia
+    // Se estiver no Chatbot ou Salvos, e for modo escuro do sistema, usa escuro
     final isSystemDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
-    if (_currentIndex == 1 && isSystemDark) return Colors.grey.shade900;
+    if ((_currentIndex == 1 || _currentIndex == 2) && isSystemDark) return Colors.grey.shade900;
     
     switch (_bibleTheme) {
       case ReadingTheme.sepia: return AppColors.navSepia;
@@ -72,7 +72,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Color get _contentColor {
     final isSystemDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
-    if (_currentIndex == 1) return isSystemDark ? Colors.grey.shade400 : Colors.black87;
+    // Chatbot (index 1) e Salvos (index 2) podem usar system dark se system for dark
+    if (_currentIndex == 1 || _currentIndex == 2) return isSystemDark ? Colors.grey.shade400 : Colors.black87;
 
     switch (_bibleTheme) {
       case ReadingTheme.dark: return Colors.grey.shade400;
@@ -114,6 +115,10 @@ class _HomeScreenState extends State<HomeScreen> {
               key: _chatBotKey, 
               onNavigateToVerse: _navigateToVerse
             ), // Atribuindo a Key
+            SavedDataScreen(
+              currentTheme: _bibleTheme,
+              onNavigateToVerse: _navigateToVerse,
+            ),
           ],
         ),
       ),
@@ -155,6 +160,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icon(Icons.chat_bubble_outline),
                   selectedIcon: Icon(Icons.chat_bubble),
                   label: 'Chatbot',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.bookmarks_outlined),
+                  selectedIcon: Icon(Icons.bookmarks),
+                  label: 'Salvos',
                 ),
               ],
             );

@@ -9,6 +9,7 @@ class NoteEditorScreen extends StatefulWidget {
   final int verseNumber;
   final String verseText;
   final String? initialNote;
+  final String? initialTitle;
   final Color backgroundColor;
   final Color textColor;
   final Color accentColor;
@@ -20,6 +21,7 @@ class NoteEditorScreen extends StatefulWidget {
     required this.verseNumber,
     required this.verseText,
     this.initialNote,
+    this.initialTitle,
     required this.backgroundColor,
     required this.textColor,
     required this.accentColor,
@@ -58,7 +60,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
             document: Document.fromJson(json['delta']),
             selection: const TextSelection.collapsed(offset: 0),
           );
-          if (json['title'] != null) {
+          if (json['title'] != null && widget.initialTitle == null) {
              _titleController.text = json['title'];
           }
         } else {
@@ -76,6 +78,11 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
       }
     } else {
       _controller = QuillController.basic();
+    }
+    
+    // Set Title
+    if (widget.initialTitle != null) {
+      _titleController.text = widget.initialTitle!;
     }
   }
 

@@ -1,8 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import '../utils/theme.dart';
 import '../data/bible_repository.dart';
+import '../data/supabase_service.dart';
+import '../data/user_data_model.dart';
 import 'chatbot_screen.dart';
 import 'note_editor_screen.dart';
 
@@ -37,6 +40,7 @@ class BibleReaderScreen extends StatefulWidget {
 class BibleReaderScreenState extends State<BibleReaderScreen> {
   // Estado de Dados
   late BibleRepository _repo;
+  final SupabaseService _supabaseService = SupabaseService();
   String selectedBook = 'Gênesis';
   int selectedChapter = 1;
   List<Map<String, dynamic>> verses = [];
@@ -135,13 +139,44 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
     
     try {
       final newVerses = await _repo.getChapter(selectedBook, selectedChapter);
+      
+      // Carregar destaques e notas do Supabase
+      final highlights = await _supabaseService.getHighlights(selectedBook, selectedChapter);
+      final notes = await _supabaseService.getNotes(selectedBook, selectedChapter);
+
+      // Merge data
+      for (var verse in newVerses) {
+        final vNum = verse['number'];
+        
+        // Aplica Highlight
+        final highlight = highlights.firstWhere(
+          (h) => h.verse == vNum, 
+          orElse: () => Highlight(book: '', chapter: 0, verse: -1, color: 0, type: '') 
+        );
+        if (highlight.verse != -1) {
+          // Convert from signed 32-bit (DB) to unsigned 32-bit (Flutter Color)
+          final colorValue = highlight.color;
+          // Se o valor for negativo (ex: -16777216), trata como bitwise uint32
+          verse['highlighted'] = Color(colorValue);
+        }
+
+        // Aplica Note
+        final note = notes.firstWhere(
+          (n) => n.verse == vNum,
+          orElse: () => UserNote(book: '', chapter: 0, verse: -1, content: '')
+        );
+        if (note.verse != -1) {
+          verse['note'] = note.content; 
+          verse['note_title'] = note.title;
+        }
+      }
+
       setState(() {
         verses = newVerses;
         _isLoading = false;
       });
       
-      // Reset scroll (com ItemScrollController, geralmente começa do 0, 
-      // mas podemos forçar se mudou de capítulo manualmente)
+      // Reset scroll (com ItemScrollController, geralmente começa do 0)
       if (verses.isNotEmpty) {
          try {
            _itemScrollController.jumpTo(index: 0);
@@ -572,7 +607,10 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
                     GestureDetector(
                       onTap: () {
                         setState(() {
-                          for (var i in _selectedVerses) verses[i]['highlighted'] = null;
+                          for (var i in _selectedVerses) {
+                            verses[i]['highlighted'] = null;
+                            _supabaseService.removeHighlight(selectedBook, selectedChapter, verses[i]['number']);
+                          }
                           _selectedVerses.clear();
                         });
                       },
@@ -587,7 +625,19 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
                     ..._availableColors.map((color) => GestureDetector(
                       onTap: () {
                          setState(() {
-                           for (var i in _selectedVerses) verses[i]['highlighted'] = color;
+                           for (var i in _selectedVerses) {
+                             verses[i]['highlighted'] = color;
+                             // Convert unsigned 32-bit color to signed 32-bit for Int4 DB
+                             final dbColor = color.value.toSigned(32);
+                             
+                             _supabaseService.saveHighlight(Highlight(
+                               book: selectedBook,
+                               chapter: selectedChapter, 
+                               verse: verses[i]['number'], 
+                               color: dbColor, 
+                               type: _selectedHighlightStyle == HighlightStyle.fundoTexto ? 'text' : 'block'
+                             ));
+                           }
                            _selectedVerses.clear();
                          });
                       },
@@ -1007,15 +1057,6 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
                mainAxisAlignment: MainAxisAlignment.center,
                children: [
                   GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        for (var i in _selectedVerses) {
-                          verses[i]['highlighted'] = null;
-                        }
-                        _selectedVerses.clear();
-                      });
-                      Navigator.pop(context);
-                    },
                     child: _buildColorCircle(null, isReset: true),
                   ),
                   ..._availableColors.map((color) => GestureDetector(
@@ -1023,6 +1064,14 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
                        setState(() {
                          for (var i in _selectedVerses) {
                            verses[i]['highlighted'] = color;
+                           final dbColor = color.value.toSigned(32);
+                           _supabaseService.saveHighlight(Highlight(
+                               book: selectedBook,
+                               chapter: selectedChapter, 
+                               verse: verses[i]['number'], 
+                               color: dbColor, 
+                               type: _selectedHighlightStyle == HighlightStyle.fundoTexto ? 'text' : 'block'
+                           ));
                          }
                          _selectedVerses.clear();
                        });
@@ -1312,6 +1361,14 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
                 setState(() {
                   if (!_availableColors.contains(tempColor)) _availableColors.add(tempColor);
                   verses[verseIndex]['highlighted'] = tempColor;
+                  final dbColor = tempColor.value.toSigned(32);
+                  _supabaseService.saveHighlight(Highlight(
+                      book: selectedBook, 
+                      chapter: selectedChapter, 
+                      verse: verses[verseIndex]['number'], 
+                      color: dbColor, 
+                      type: _selectedHighlightStyle == HighlightStyle.fundoTexto ? 'text' : 'block'
+                  ));
                 });
                 setModalState(() {});
                 Navigator.pop(context);
@@ -1327,8 +1384,10 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
 
 
 
+
   void _showNoteBottomSheet(int index) async {
     final note = verses[index]['note'];
+    final noteTitle = verses[index]['note_title']; // Pega título salvo
     final verseNumber = verses[index]['number'];
     final verseText = verses[index]['text'];
     
@@ -1342,6 +1401,7 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
           verseNumber: verseNumber,
           verseText: verseText,
           initialNote: note,
+          initialTitle: noteTitle,
           backgroundColor: _backgroundColor, // Passando tema atual
           textColor: _textColor,
           accentColor: _uiActiveColor,
@@ -1352,10 +1412,38 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
     // Se retornou algo (JSON string), salva. 
     // Se retornou null, o usuário apenas voltou sem salvar.
     if (result != null && result is String) {
+      // Decodificar JSON para pegar o título se houver (o editor retorna o JSON completo com delta e title)
+      String? title;
+      String contentToSave = result;
+      
+      try {
+        final jsonMap = jsonDecode(result);
+        if (jsonMap is Map) {
+          if (jsonMap.containsKey('title')) {
+             title = jsonMap['title'];
+          }
+          if (jsonMap.containsKey('delta')) {
+            // Extrai apenas o delta para salvar no content
+             contentToSave = jsonEncode(jsonMap['delta']);
+          }
+        }
+      } catch (_) {}
+      
+      // Atualiza local state (mais limpo)
       setState(() {
-        verses[index]['note'] = result;
+        verses[index]['note'] = contentToSave;
+        verses[index]['note_title'] = title;
       });
-      _showSnackBar('Anotação salva');
+
+      await _supabaseService.saveNote(UserNote(
+        book: selectedBook, 
+        chapter: selectedChapter, 
+        verse: verseNumber, 
+        content: contentToSave,
+        title: title
+      ));
+
+      _showSnackBar('Anotação salva e sincronizada');
     }
   }
 
