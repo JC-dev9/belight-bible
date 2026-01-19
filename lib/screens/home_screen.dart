@@ -20,6 +20,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey<ChatBotScreenState> _chatBotKey = GlobalKey<ChatBotScreenState>();
   // Key para acessar o estado da Bíblia
   final GlobalKey<BibleReaderScreenState> _bibleKey = GlobalKey<BibleReaderScreenState>();
+  // Key para acessar o estado de Salvos (Auto-Refresh)
+  final GlobalKey<SavedDataScreenState> _savedDataKey = GlobalKey<SavedDataScreenState>();
 
   void _updateBibleTheme(ReadingTheme newTheme) {
     setState(() {
@@ -116,6 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onNavigateToVerse: _navigateToVerse
             ), // Atribuindo a Key
             SavedDataScreen(
+              key: _savedDataKey, // Key para refresh
               currentTheme: _bibleTheme,
               onNavigateToVerse: _navigateToVerse,
             ),
@@ -145,7 +148,13 @@ class _HomeScreenState extends State<HomeScreen> {
           builder: (context, color, child) {
             return NavigationBar(
               selectedIndex: _currentIndex,
-              onDestinationSelected: (index) => setState(() => _currentIndex = index),
+              onDestinationSelected: (index) { 
+                setState(() => _currentIndex = index);
+                // AUTO REFRES HLOGIC
+                if (index == 2) {
+                  _savedDataKey.currentState?.refreshData();
+                }
+              },
               height: 80,
               elevation: 0,
               backgroundColor: color,
