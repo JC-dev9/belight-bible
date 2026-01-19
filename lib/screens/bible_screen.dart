@@ -54,6 +54,10 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
     Colors.green.shade300,
     Colors.blue.shade300,
     Colors.pink.shade300,
+    Colors.purple.shade300, 
+    Colors.orange.shade300,
+    Colors.teal.shade300,
+    Colors.brown.shade300,
   ];
 
   double _fontSize = 18.0;
@@ -66,6 +70,10 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
   
   // Seleção múltipla
   final Set<int> _selectedVerses = {};
+  
+  // Controle de Expansão de Cores
+  bool _isColorsExpanded = false;
+  static const int _collapsedColorCount = 3;
 
   void _clearFocus() {
     if (_focusedVerseIndex != null) {
@@ -529,17 +537,9 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
     );
   }
 
-  // Substitui o modal flutuante por um painel persistente quando há seleção
+  // Substitui o modal flutuante por um painel persistente compact quando há seleção
   Widget _buildSelectionPanel(Color bgColor, Color textColor) {
     if (_selectedVerses.isEmpty) return const SizedBox.shrink();
-
-    final sortedIndices = _selectedVerses.toList()..sort();
-    final count = sortedIndices.length;
-    final firstVerse = verses[sortedIndices.first];
-    
-    String title = count == 1 
-        ? '$selectedBook $selectedChapter:${firstVerse['number']}' 
-        : '$count versículos'; // Encurtado para "versículos"
 
     return SafeArea(
       child: Padding(
@@ -547,7 +547,7 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
         child: Container(
           decoration: BoxDecoration(
             color: bgColor,
-            borderRadius: BorderRadius.circular(24), // Borda totalmente arredondada
+            borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.15), 
@@ -556,122 +556,171 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
               )
             ],
           ),
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Header Compacto
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                   children: [
-                      // Botão Fechar (Esquerda)
-                      GestureDetector(
-                        onTap: () => setState(() => _selectedVerses.clear()),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(color: textColor.withOpacity(0.05), shape: BoxShape.circle),
-                          child: Icon(Icons.close, size: 20, color: textColor),
+              // Linha 1: Fechar | Cores | Toggle Estilo
+              Row(
+                children: [
+                   // Fechar
+                   GestureDetector(
+                    onTap: () => setState(() => _selectedVerses.clear()),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(color: textColor.withOpacity(0.05), shape: BoxShape.circle),
+                      child: Icon(Icons.close, size: 20, color: textColor),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  
+                  // Lista de Cores Scrollable
+                  Expanded(
+                    child: ShaderMask(
+                      shaderCallback: (Rect bounds) {
+                        return LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: [Colors.white, Colors.white, Colors.white.withOpacity(0.05)],
+                          stops: const [0.0, 0.85, 1.0],
+                          tileMode: TileMode.mirror,
+                        ).createShader(bounds);
+                      },
+                      blendMode: BlendMode.dstIn,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+
+                            // Reset
+                             GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  for (var i in _selectedVerses) {
+                                    verses[i]['highlighted'] = null;
+                                    _supabaseService.removeHighlight(selectedBook, selectedChapter, verses[i]['number']);
+                                  }
+                                  _selectedVerses.clear();
+                                  _isColorsExpanded = false; // Reset ao fechar
+                                });
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.only(right: 8),
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: textColor.withOpacity(0.2))),
+                                child: Icon(Icons.format_color_reset, size: 18, color: textColor),
+                              ),
+                            ),
+                            
+                            // Cores (Lógica Expansível)
+                            ..._availableColors.asMap().entries.map((entry) {
+                               final index = entry.key;
+                               final color = entry.value;
+                               final isVisible = _isColorsExpanded || index < _collapsedColorCount;
+                               final isSmall = !_isColorsExpanded && index >= _collapsedColorCount; // Nunca deve acontecer com a flag isVisible acima, mas mantemos lógica
+                               
+                               if (!isVisible && !_isColorsExpanded) {
+                                 // Renderiza bolinhas pequenas para os itens escondidos (apenas se quisermos mostrar indicação)
+                                 // Mas a estratégia pedida é: mostrar os primeiros 4 grandes, e os outros pequenos.
+                                 // Vamos ajustar a lógica: renderiza TODOS. Os > 4 ficam pequenos se colapsado.
+                               }
+                               
+                               // Nova Lógica:
+                               // Se colapsado: Index 0-3 grandes. Index 4+ pequenos.
+                               // Se expandido: Todos grandes.
+                               
+                               final bool showAsSmall = !_isColorsExpanded && index >= _collapsedColorCount;
+                               
+                               return GestureDetector(
+                                onTap: () {
+                                   if (showAsSmall) {
+                                     // Expandir
+                                     setState(() => _isColorsExpanded = true);
+                                   } else {
+                                     // Selecionar Cor
+                                     setState(() {
+                                       for (var i in _selectedVerses) {
+                                         verses[i]['highlighted'] = color;
+                                         final dbColor = color.value.toSigned(32);
+                                         _supabaseService.saveHighlight(Highlight(
+                                           book: selectedBook,
+                                           chapter: selectedChapter, 
+                                           verse: verses[i]['number'], 
+                                           color: dbColor, 
+                                           type: _selectedHighlightStyle == HighlightStyle.fundoTexto ? 'text' : 'block'
+                                         ));
+                                       }
+                                       _selectedVerses.clear();
+                                       _isColorsExpanded = false; // Reset após usar
+                                     });
+                                   }
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeOutBack,
+                                  width: showAsSmall ? 16 : 32, 
+                                  height: showAsSmall ? 16 : 32,
+                                  margin: EdgeInsets.only(right: showAsSmall ? 4 : 8),
+                                  decoration: BoxDecoration(
+                                    color: color, 
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.black12, width: 1)
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                            
+                            // Advanced Picker
+                            GestureDetector(
+                              onTap: () => _showAdvancedColorPicker(_selectedVerses.first, setState),
+                              child: Container(
+                                width: 32, height: 32,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: textColor.withOpacity(0.2)),
+                                  gradient: const SweepGradient(colors: [Colors.red, Colors.yellow, Colors.green, Colors.blue, Colors.purple, Colors.red])
+                                ),
+                                child: const Icon(Icons.colorize, size: 16, color: Colors.white),
+                              ),
+                            ),
+                            const SizedBox(width: 16), // Extra padding for fade effect
+                          ],
                         ),
                       ),
-                      
-                      // Título (Centro)
-                      Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
-                      
-                      // Placeholder/Spacer (Direita) para balancear
-                      const SizedBox(width: 40), 
-                   ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              
-              // Toggles (Estilo Chips)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildStyleToggleBtn(setState, HighlightStyle.fundoVersiculo, "Bloco", Icons.crop_square),
+                    ),
+                  ),
                   const SizedBox(width: 12),
-                  _buildStyleToggleBtn(setState, HighlightStyle.fundoTexto, "Texto", Icons.title),
+                  
+                  // Toggle Estilo Compacto
+                  GestureDetector(
+                    onTap: () {
+                       setState(() {
+                         _selectedHighlightStyle = _selectedHighlightStyle == HighlightStyle.fundoVersiculo 
+                             ? HighlightStyle.fundoTexto 
+                             : HighlightStyle.fundoVersiculo;
+                       });
+                    },
+                    child: Container(
+                       padding: const EdgeInsets.all(8),
+                       decoration: BoxDecoration(
+                         color: textColor.withOpacity(0.05),
+                         borderRadius: BorderRadius.circular(12)
+                       ),
+                       child: Icon(
+                         _selectedHighlightStyle == HighlightStyle.fundoVersiculo ? Icons.crop_square : Icons.title, 
+                         size: 20, 
+                         color: _uiActiveColor
+                       )
+                    )
+                  )
                 ],
               ),
-              const SizedBox(height: 16),
-
-              // Cores
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  children: [
-                    // Reset
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          for (var i in _selectedVerses) {
-                            verses[i]['highlighted'] = null;
-                            _supabaseService.removeHighlight(selectedBook, selectedChapter, verses[i]['number']);
-                          }
-                          _selectedVerses.clear();
-                        });
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.only(right: 12),
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: textColor.withOpacity(0.2))),
-                        child: Icon(Icons.format_color_reset, size: 20, color: textColor),
-                      ),
-                    ),
-                    // Cores
-                    ..._availableColors.map((color) => GestureDetector(
-                      onTap: () {
-                         setState(() {
-                           for (var i in _selectedVerses) {
-                             verses[i]['highlighted'] = color;
-                             // Convert unsigned 32-bit color to signed 32-bit for Int4 DB
-                             final dbColor = color.value.toSigned(32);
-                             
-                             _supabaseService.saveHighlight(Highlight(
-                               book: selectedBook,
-                               chapter: selectedChapter, 
-                               verse: verses[i]['number'], 
-                               color: dbColor, 
-                               type: _selectedHighlightStyle == HighlightStyle.fundoTexto ? 'text' : 'block'
-                             ));
-                           }
-                           _selectedVerses.clear();
-                         });
-                      },
-                      child: Container(
-                        width: 40, height: 40,
-                        margin: const EdgeInsets.only(right: 12),
-                        decoration: BoxDecoration(
-                          color: color, shape: BoxShape.circle,
-                          border: Border.all(color: Colors.black12, width: 1)
-                        ),
-                      ),
-                    )).toList(),
-                    // Advanced Picker
-                    GestureDetector(
-                      onTap: () => _showAdvancedColorPicker(_selectedVerses.first, setState),
-                      child: Container(
-                        width: 40, height: 40,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: textColor.withOpacity(0.2)),
-                          gradient: const SweepGradient(colors: [Colors.red, Colors.yellow, Colors.green, Colors.blue, Colors.purple, Colors.red])
-                        ),
-                        child: const Icon(Icons.colorize, size: 20, color: Colors.white),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
               
-              // Ações (Divider sutil antes?)
+              const SizedBox(height: 12),
               Divider(height: 1, color: textColor.withOpacity(0.05)),
               const SizedBox(height: 12),
               
+              // Linha 2: Ações
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -683,16 +732,10 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
                       _showSnackBar('Copiado');
                     }
                   }, textColor),
-                  _buildOptionIcon(Icons.share, 'Partilhar', () async { // Async
+                  _buildOptionIcon(Icons.share, 'Partilhar', () async { 
                     final text = _getSelectedText();
-                    // Inicia o compartilhamento
                     await Share.share(text);
-                    
-                    // Pequeno delay para garantir que o Share Sheet abriu e a transição ocorreu
-                    // antes de alterar a árvore de widgets (remover o painel).
-                    // Isso evita crashes nativos em alguns dispositivos.
                     await Future.delayed(const Duration(milliseconds: 500));
-                    
                     if (mounted) setState(() => _selectedVerses.clear());
                   }, textColor),
                   _buildOptionIcon(Icons.edit_note, 'Anotar', () {
@@ -706,7 +749,7 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
                        _showSnackBar('Selecione apenas 1 para anotar');
                      }
                   }, textColor),
-                  _buildOptionIcon(Icons.psychology, 'AI', () { // Encurtado
+                  _buildOptionIcon(Icons.psychology, 'AI', () {
                     final text = _getSelectedText();
                     final prompt = "Explique: \"$text\"";
                     if (mounted) {
