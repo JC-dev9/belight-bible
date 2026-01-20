@@ -1,0 +1,4 @@
+enum HighlightStyle {
+  fundoVersiculo,
+  fundoTexto,
+}
