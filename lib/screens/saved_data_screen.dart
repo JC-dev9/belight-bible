@@ -10,11 +10,13 @@ import 'package:flutter/services.dart';
 class SavedDataScreen extends StatefulWidget {
   final ReadingTheme currentTheme;
   final Function(String book, int chapter, int verse) onNavigateToVerse;
+  final VoidCallback? onDataChanged;
 
   const SavedDataScreen({
     super.key,
     required this.currentTheme,
     required this.onNavigateToVerse,
+    this.onDataChanged,
   });
 
   @override
@@ -101,11 +103,13 @@ class SavedDataScreenState extends State<SavedDataScreen> with SingleTickerProvi
               // Undo Logic
               await _supabaseService.saveHighlight(item);
               _loadData(); // Reload to restore correct order
+              widget.onDataChanged?.call(); // Refresh bible screen
             },
           ),
         ),
       );
     }
+    widget.onDataChanged?.call(); // Refresh bible screen
   }
 
   Future<void> _deleteNote(int index) async {
@@ -130,11 +134,13 @@ class SavedDataScreenState extends State<SavedDataScreen> with SingleTickerProvi
               // Undo Logic
               await _supabaseService.saveNote(item);
               _loadData();
+              widget.onDataChanged?.call(); // Refresh bible screen
             },
           ),
         ),
       );
     }
+    widget.onDataChanged?.call(); // Refresh bible screen
   }
 
   // --- EDIT LOGIC (Notes) ---
@@ -170,7 +176,7 @@ class SavedDataScreenState extends State<SavedDataScreen> with SingleTickerProvi
     );
 
     // 3. Save if changed
-    if (resultJson != null && resultJson is String) {
+    if (resultJson != null && resultJson is String) { 
       try {
         final Map<String, dynamic> data = jsonDecode(resultJson);
         // data has: 'delta' (Map), 'plainText' (String), 'title' (String?), 'hasTitle' (bool), 'updatedAt' (String)
@@ -192,6 +198,7 @@ class SavedDataScreenState extends State<SavedDataScreen> with SingleTickerProvi
 
         await _supabaseService.saveNote(updatedNote);
         await refreshData();
+        widget.onDataChanged?.call(); // Refresh bible screen
         
         if (mounted) {
            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Anotação salva com sucesso!')));
@@ -353,89 +360,124 @@ class SavedDataScreenState extends State<SavedDataScreen> with SingleTickerProvi
             onPressed: () async {
               await _supabaseService.saveHighlight(item);
               _loadData();
+              widget.onDataChanged?.call();
             },
           ),
         ),
       );
     }
+    widget.onDataChanged?.call();
   }
 
   Widget _buildNotesTab() {
     if (_notes.isEmpty) return _buildEmptyState("Nenhuma anotação encontrada.");
     
-    return GridView.builder(
+    return ListView.builder(
       padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2, 
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.80 // Slightly taller to fit icons
-      ),
       itemCount: _notes.length,
       itemBuilder: (context, index) {
         final note = _notes[index];
-        return GestureDetector(
-          onTap: () => _editNote(note), // Tap to EDIT
-          child: Container(
-            padding: const EdgeInsets.all(16),
+        
+        return Dismissible(
+          key: Key('note_${note.book}_${note.chapter}_${note.verse}'),
+          direction: DismissDirection.endToStart,
+          background: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 20),
             decoration: BoxDecoration(
-              color: _textColor.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: _textColor.withOpacity(0.1)),
+              color: Colors.red.shade400,
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                 Row(
-                   children: [
-                     Icon(Icons.bookmark, size: 14, color: _accentColor),
-                     const SizedBox(width: 4),
-                     Expanded(
-                       child: Text(
-                         '${note.book} ${note.chapter}:${note.verse}', 
-                         style: TextStyle(color: _accentColor, fontSize: 11, fontWeight: FontWeight.bold),
-                         overflow: TextOverflow.ellipsis,
+            child: const Icon(Icons.delete_outline, color: Colors.white, size: 28),
+          ),
+          confirmDismiss: (direction) async {
+             return await _confirmDelete('Anotação');
+          },
+          onDismissed: (direction) {
+             _deleteNoteSwipe(index, note);
+          },
+          child: GestureDetector(
+            onTap: () => _editNote(note), // Tap to EDIT
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _textColor.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _textColor.withOpacity(0.1)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                   Row(
+                     children: [
+                       Icon(Icons.bookmark, size: 14, color: _accentColor),
+                       const SizedBox(width: 4),
+                       Expanded(
+                         child: Text(
+                           '${note.book} ${note.chapter}:${note.verse}', 
+                           style: TextStyle(color: _accentColor, fontSize: 13, fontWeight: FontWeight.bold),
+                           overflow: TextOverflow.ellipsis,
+                         ),
                        ),
-                     ),
-                     // Trash Icon
-                     GestureDetector(
-                       onTap: () => _deleteNote(index),
-                       child: Icon(Icons.delete_outline, size: 18, color: Colors.red.withOpacity(0.7)),
-                     )
-                   ],
-                 ),
-                 const SizedBox(height: 8),
-                 Text(
-                   note.title ?? 'Sem título',
-                   style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 15),
-                   maxLines: 2,
-                   overflow: TextOverflow.ellipsis,
-                 ),
-                 const SizedBox(height: 8),
-                 Expanded(
-                   child: Text(
-                     note.previewText,
-                     style: TextStyle(color: _textColor.withOpacity(0.7), fontSize: 12, height: 1.4),
-                     overflow: TextOverflow.fade,
+                       // Swipe indicator hint (optional, kept simple for now)
+                       Icon(Icons.arrow_forward_ios, size: 12, color: _textColor.withOpacity(0.3)),
+                     ],
                    ),
-                 ),
-                 const SizedBox(height: 8),
-                 Row(
-                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                   children: [
+                   const SizedBox(height: 8),
+                   if (note.title != null && note.title!.isNotEmpty) ...[
                      Text(
-                       _formatDate(note.updatedAt),
-                       style: TextStyle(color: _textColor.withOpacity(0.4), fontSize: 10),
+                       note.title!,
+                       style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16),
+                       maxLines: 1,
+                       overflow: TextOverflow.ellipsis,
                      ),
-                     Icon(Icons.edit, size: 14, color: _textColor.withOpacity(0.3)),
+                     const SizedBox(height: 6),
                    ],
-                 ),
-              ],
+                   Text(
+                     note.previewText,
+                     style: TextStyle(color: _textColor.withOpacity(0.8), fontSize: 14, height: 1.5),
+                     maxLines: 3,
+                     overflow: TextOverflow.ellipsis,
+                   ),
+                   const SizedBox(height: 12),
+                   Text(
+                     "Editado em ${_formatDate(note.updatedAt)}",
+                     style: TextStyle(color: _textColor.withOpacity(0.4), fontSize: 11),
+                   ),
+                ],
+              ),
             ),
           ),
         );
       },
     );
+  }
+
+  // Swipe logic for Notes
+  Future<void> _deleteNoteSwipe(int index, UserNote item) async {
+    setState(() {
+      _notes.removeAt(index);
+    });
+
+    await _supabaseService.deleteNote(item.book, item.chapter, item.verse);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Anotação removida'),
+          action: SnackBarAction(
+            label: 'Desfazer',
+            onPressed: () async {
+              await _supabaseService.saveNote(item);
+              _loadData();
+              widget.onDataChanged?.call();
+            },
+          ),
+        ),
+      );
+    }
+    widget.onDataChanged?.call();
   }
 
   Widget _buildEmptyState(String msg) {

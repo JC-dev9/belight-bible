@@ -91,6 +91,11 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
     _loadInitialData();
   }
 
+  // Método público para recarregar dados (usado para sync de favoritos)
+  Future<void> refreshData() async {
+    await _loadChapter();
+  }
+
   // Método público para navegar para um versículo específico
   Future<void> jumpToVerse(String book, int chapter, int verse) async {
     // 1. Atualiza livro e capítulo se necessário
@@ -98,8 +103,15 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
       setState(() {
         selectedBook = book;
         selectedChapter = chapter;
+        _selectedVerses.clear(); // Limpa seleção ao mudar de capítulo
       });
       await _loadChapter();
+    } else {
+       // Se for o mesmo capítulo, mas viemos de fora, garantir que a seleção anterior limpe
+       // ou manter se for o comportamento desejado. No caso de bug fix de modal persistente:
+       setState(() {
+         _selectedVerses.clear();
+       });
     }
 
     // 2. Aguarda um pouco para a lista ser construída com os novos versículos
@@ -208,7 +220,10 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
     final newChapter = selectedChapter + delta;
 
     if (newChapter >= 1 && newChapter <= maxChapters) {
-      setState(() => selectedChapter = newChapter);
+      setState(() {
+        selectedChapter = newChapter;
+        _selectedVerses.clear(); // Fix: Limpa modal ao trocar capítulo
+      });
       _loadChapter();
     } else if (newChapter > maxChapters) {
       _showSnackBar('Último capítulo de $selectedBook.');
@@ -1002,6 +1017,7 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
                         setState(() {
                           selectedBook = book;
                           selectedChapter = 1;
+                          _selectedVerses.clear(); // FIX: Clear selection
                         });
                         Navigator.pop(context);
                         _loadChapter();
@@ -1048,7 +1064,10 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
                   final isSelected = chapter == selectedChapter;
                   return InkWell(
                     onTap: () {
-                      setState(() => selectedChapter = chapter);
+                      setState(() {
+                        selectedChapter = chapter;
+                        _selectedVerses.clear(); // FIX: Clear selection
+                      });
                       Navigator.pop(context);
                       _loadChapter();
                     },

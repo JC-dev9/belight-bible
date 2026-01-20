@@ -121,6 +121,11 @@ class _HomeScreenState extends State<HomeScreen> {
               key: _savedDataKey, // Key para refresh
               currentTheme: _bibleTheme,
               onNavigateToVerse: _navigateToVerse,
+              onDataChanged: () {
+                 // Quando algo muda em Salvos (delete/edit), recarrega a bíblia
+                 // para atualizar os grifos e notas visualmente
+                 _bibleKey.currentState?.refreshData();
+              },
             ),
           ],
         ),
