@@ -117,7 +117,10 @@ class ChatBotScreenState extends State<ChatBotScreen> {
                               if (parts.length >= 3) {
                                 final book = Uri.decodeComponent(parts[0]);
                                 final chapter = int.tryParse(parts[1]) ?? 1;
-                                final verse = int.tryParse(parts[2]) ?? 1;
+                                
+                                // Fix: Handle ranges like "11-21" by taking the first part
+                                final verseString = parts[2].split('-')[0]; // "11-21" -> "11"
+                                final verse = int.tryParse(verseString) ?? 1;
                                 
                                 if (widget.onNavigateToVerse != null) {
                                   widget.onNavigateToVerse!(book, chapter, verse);

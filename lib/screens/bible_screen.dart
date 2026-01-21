@@ -380,31 +380,17 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
       ),
     );
 
-    if (result != null && result is String) {
+    if (result != null && result is Map) {
       _saveNoteResult(index, result, verseNumber);
     }
   }
 
-  Future<void> _saveNoteResult(int index, String jsonResult, int verseNumber) async {
-      String? title;
-      String contentToSave = jsonResult;
-
-      try {
-        final jsonMap = jsonDecode(jsonResult);
-        if (jsonMap is Map) {
-          if (jsonMap.containsKey('title')) {
-             title = jsonMap['title'];
-          }
-          if (jsonMap.containsKey('plainText')) {
-             contentToSave = jsonMap['plainText'];
-          } else if (jsonMap.containsKey('delta')) {
-             contentToSave = jsonEncode(jsonMap['delta']);
-          }
-        }
-      } catch (_) {
-        // Não é um objeto JSON, assumir texto simples ou conteúdo direto
-      }
-
+  Future<void> _saveNoteResult(int index, Map result, int verseNumber) async {
+      String? title = result['title'];
+      String contentToSave = result['content'] ?? '';
+      // Color might be used in the future or stored in content
+      
+      // Update local state
       setState(() {
         _verses[index]['note'] = contentToSave;
         _verses[index]['note_title'] = title;

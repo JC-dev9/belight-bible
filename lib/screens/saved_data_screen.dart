@@ -176,13 +176,12 @@ class SavedDataScreenState extends State<SavedDataScreen> with SingleTickerProvi
     );
 
     // 3. Save if changed
-    if (resultJson != null && resultJson is String) { 
+    if (resultJson != null && resultJson is Map) { 
       try {
-        final Map<String, dynamic> data = jsonDecode(resultJson);
-        // data has: 'delta' (Map), 'plainText' (String), 'title' (String?), 'hasTitle' (bool), 'updatedAt' (String)
+        final data = resultJson; // It's already a map
+        // data has: 'content' (String JSON), 'title' (String?), 'color' (int?)
         
-        // Convert Delta Map to formatted String for storage (consistent with UserNote expectation)
-        final newContent = jsonEncode(data['delta']);
+        final newContent = data['content'] as String;
         final newTitle = data['title'] as String?;
         
         final updatedNote = UserNote(

@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Para controlar a cor da barra de status
 import 'package:flutter_quill/flutter_quill.dart';
+import '../widgets/note_editor/note_editor_toolbar.dart';
+import '../widgets/note_editor/verse_context_card.dart';
 
 class NoteEditorScreen extends StatefulWidget {
   final String book;
@@ -34,103 +35,96 @@ class NoteEditorScreen extends StatefulWidget {
 class _NoteEditorScreenState extends State<NoteEditorScreen> {
   late QuillController _controller;
   final TextEditingController _titleController = TextEditingController();
-  final FocusNode _editorFocusNode = FocusNode();
+  final ScrollController _editorScrollController = ScrollController();
+  final FocusNode _editorFocusNode = FocusNode(); // Re-introduced FocusNode
   
-  // Variáveis para controlar o estado da UI sem recriar tudo
+  // State
   bool _isDirty = false; 
+  EditorToolbarMode _toolbarMode = EditorToolbarMode.none;
+  Color? _customBackgroundColor; 
+
+  // Available background colors
+  final List<Color?> _backgroundColors = [
+    null, // Default
+    const Color(0xFFFAAFA8), // Red
+    const Color(0xFFF39F76), // Orange
+    const Color(0xFFFFF8B8), // Yellow
+    const Color(0xFFE2F6D3), // Green
+    const Color(0xFFB4DDD3), // Teal
+    const Color(0xFFD4E4ED), // Blue
+    const Color(0xFFAECCDC), // Dark Blue
+    const Color(0xFFD3BFDB), // Purple
+    const Color(0xFFF6E2DD), // Pink
+    const Color(0xFFE9E3D4), // Brown
+    const Color(0xFFEFEFF1), // Grey
+  ];
 
   @override
   void initState() {
     super.initState();
+    _customBackgroundColor = null; 
     _loadContent();
-    
-    // Ouve alterações para saber se há algo para salvar
-    _controller.document.changes.listen((event) {
-      if (!_isDirty) setState(() => _isDirty = true);
-    });
-  }
-
-  void _loadContent() {
-    if (widget.initialNote != null && widget.initialNote!.isNotEmpty) {
-      try {
-        final json = jsonDecode(widget.initialNote!);
-        
-        if (json is Map && json.containsKey('delta')) {
-          _controller = QuillController(
-            document: Document.fromJson(json['delta']),
-            selection: const TextSelection.collapsed(offset: 0),
-          );
-          if (json['title'] != null && widget.initialTitle == null) {
-             _titleController.text = json['title'];
-          }
-        } else {
-           _controller = QuillController(
-            document: Document.fromJson(json),
-            selection: const TextSelection.collapsed(offset: 0),
-          );
-        }
-      } catch (e) {
-        final doc = Document()..insert(0, widget.initialNote!);
-        _controller = QuillController(
-          document: doc,
-          selection: const TextSelection.collapsed(offset: 0),
-        );
-      }
-    } else {
-      _controller = QuillController.basic();
-    }
-    
-    // Set Title
-    if (widget.initialTitle != null) {
-      _titleController.text = widget.initialTitle!;
-    }
-  }
-
-  void _saveAndExit() {
-    final delta = _controller.document.toDelta().toJson();
-    final title = _titleController.text.trim();
-    
-    // Otimização: Se estiver vazio, não guarda lixo
-    if (title.isEmpty && _controller.document.isEmpty()) {
-       Navigator.pop(context);
-       return;
-    }
-
-    final noteData = {
-      'delta': delta,
-      'plainText': _controller.document.toPlainText(),
-      'title': title.isNotEmpty ? title : null,
-      'hasTitle': title.isNotEmpty,
-      'updatedAt': DateTime.now().toIso8601String(),
-    };
-    
-    final jsonString = jsonEncode(noteData);
-    Navigator.pop(context, jsonString);
+    _controller.document.changes.listen(_onDocumentChanged);
   }
 
   @override
   void dispose() {
-    _controller.dispose();
     _titleController.dispose();
-    _editorFocusNode.dispose();
+    _editorScrollController.dispose();
+    _editorFocusNode.dispose(); // Dispose properly
+    _controller.dispose();
     super.dispose();
+  }
+
+  void _onDocumentChanged(DocChange event) {
+    if (!_isDirty) setState(() => _isDirty = true);
+  }
+
+  void _loadContent() {
+    if (widget.initialTitle != null) {
+      _titleController.text = widget.initialTitle!;
+    }
+    
+    if (widget.initialNote?.isNotEmpty == true) {
+      try {
+        final doc = Document.fromJson(jsonDecode(widget.initialNote!));
+        _controller = QuillController(document: doc, selection: const TextSelection.collapsed(offset: 0));
+        return;
+      } catch (e) {
+        // Fallback to basic if parsing fails
+      }
+    }
+    _controller = QuillController.basic();
+  }
+
+  void _saveAndExit() {
+    final title = _titleController.text.trim();
+    final content = jsonEncode(_controller.document.toDelta().toJson());
+    Navigator.pop(context, {
+      'title': title,
+      'content': content,
+      'color': _customBackgroundColor?.value,
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    // Usar cores com opacidade para fundos sutis
+    final backgroundColor = _customBackgroundColor ?? widget.backgroundColor;
+    final bool isCustomColor = _customBackgroundColor != null;
+    
+    // Auto-contrast text color
+    final Color effectiveTextColor = isCustomColor ? Colors.black87 : widget.textColor;
+    final Color effectiveHintColor = isCustomColor ? Colors.black38 : widget.textColor.withOpacity(0.4);
     final surfaceColor = widget.accentColor.withOpacity(0.08);
-    final mutedText = widget.textColor.withOpacity(0.6);
 
     return Scaffold(
-      backgroundColor: widget.backgroundColor,
-      // AppBar Minimalista
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        backgroundColor: widget.backgroundColor,
+        backgroundColor: backgroundColor,
         elevation: 0,
-        scrolledUnderElevation: 0, // Remove sombra ao rolar (Material 3)
+        scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: widget.textColor, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: effectiveTextColor, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
@@ -150,164 +144,81 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
         ],
       ),
       
-      // Barra de Ferramentas fixa no fundo (BottomNavigationBar approach)
-      // Isso é muito mais rápido e ergonômico
-      bottomNavigationBar: Container(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom > 0 ? 0 : 20
-        ),
-        decoration: BoxDecoration(
-          color: widget.backgroundColor,
-          border: Border(top: BorderSide(color: widget.textColor.withOpacity(0.05))),
-        ),
-        child: SafeArea(
-          child: QuillSimpleToolbar(
-             controller: _controller,
-             config: QuillSimpleToolbarConfig(
-               // Configuração Minimalista e Performática
-               showFontFamily: false,
-               showFontSize: false,
-               showSearchButton: false, 
-               showIndent: false,
-               showSubscript: false,
-               showSuperscript: false,
-               showCodeBlock: false,
-               showInlineCode: false,
-               showListCheck: true, // Útil para tarefas
-               showQuote: true,
-               showLink: false, // Links costumam complicar UX móvel simples
-               
-               // Botões essenciais apenas
-               showBoldButton: true,
-               showItalicButton: true,
-               showUnderLineButton: true,
-               showStrikeThrough: true,
-               showColorButton: true,
-               showBackgroundColorButton: true,
-               showListNumbers: true,
-               showListBullets: true,
-               
-               toolbarIconAlignment: WrapAlignment.center, // Centraliza ícones
-               color: widget.backgroundColor,
-               buttonOptions: QuillSimpleToolbarButtonOptions(
-                  base: QuillToolbarBaseButtonOptions(
-                    iconTheme: QuillIconTheme(
-                      iconButtonSelectedData: IconButtonData(
-                        color: widget.accentColor,
-                        style: IconButton.styleFrom(backgroundColor: surfaceColor),
-                      ), 
-                      iconButtonUnselectedData: IconButtonData(color: mutedText)
-                    )
-                  )
-               )
-             ),
-          ),
-        ),
+      bottomNavigationBar: NoteEditorToolbar(
+        controller: _controller,
+        toolbarMode: _toolbarMode,
+        onModeChanged: (mode) => setState(() => _toolbarMode = mode),
+        backgroundColor: widget.backgroundColor,
+        textColor: widget.textColor,
+        accentColor: widget.accentColor,
+        activeColor: _customBackgroundColor,
+        backgroundColors: _backgroundColors,
+        onColorSelected: (color) => setState(() => _customBackgroundColor = color),
       ),
 
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              children: [
-                // 1. O Cartão do Versículo (Hero Section)
-                Container(
-                  margin: const EdgeInsets.only(bottom: 24, top: 8),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: surfaceColor,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.bookmark_rounded, size: 16, color: widget.accentColor),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${widget.book} ${widget.chapter}:${widget.verseNumber}'.toUpperCase(), 
-                            style: TextStyle(
-                              color: widget.accentColor, 
-                              fontWeight: FontWeight.bold, 
-                              fontSize: 12,
-                              letterSpacing: 1.0
-                            )
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        widget.verseText, 
-                        style: TextStyle(
-                          height: 1.4,
-                          fontStyle: FontStyle.italic, 
-                          color: widget.textColor.withOpacity(0.85), 
-                          fontSize: 15
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // 2. Campo de Título
-                TextField(
-                  controller: _titleController,
-                  style: TextStyle(
-                    fontSize: 24, 
-                    fontWeight: FontWeight.w800, 
-                    color: widget.textColor,
-                    letterSpacing: -0.5
-                  ),
-                  decoration: InputDecoration(
-                    hintText: "Título da anotação",
-                    hintStyle: TextStyle(
-                      color: widget.textColor.withOpacity(0.3), 
-                      fontWeight: FontWeight.w800
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+        child: CustomScrollView(
+          controller: _editorScrollController,
+          slivers: [
+            SliverToBoxAdapter(
+              child: Column(
+                children: [
+                   VerseContextCard(
+                      book: widget.book,
+                      chapter: widget.chapter,
+                      verseNumber: widget.verseNumber,
+                      verseText: widget.verseText,
+                      accentColor: widget.accentColor,
+                      backgroundColor: isCustomColor ? Colors.white.withOpacity(0.5) : surfaceColor,
+                      textColor: effectiveTextColor,
+                   ),
+                  const SizedBox(height: 24),
+                  
+                  TextField(
+                    controller: _titleController,
+                    style: TextStyle(
+                      fontSize: 24, 
+                      fontWeight: FontWeight.bold,
+                      color: effectiveTextColor,
                     ),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.zero,
-                    isDense: true,
-                  ),
-                  textCapitalization: TextCapitalization.sentences,
-                ),
-                
-                const SizedBox(height: 16),
-
-                // 3. Editor de Texto (Quill)
-                // Usando Builder para garantir constraints corretas
-                QuillEditor.basic(
-                  controller: _controller,
-                  focusNode: _editorFocusNode,
-                  config: QuillEditorConfig(
-                    placeholder: 'Comece a escrever suas reflexões...',
-                    autoFocus: false, // Melhor UX: não pular teclado na cara logo de início
-                    padding: const EdgeInsets.only(bottom: 50), // Espaço para scroll final
-                    customStyles: DefaultStyles(
-                      paragraph: DefaultTextBlockStyle(
-                        TextStyle(
-                          color: widget.textColor, 
-                          fontSize: 17, // Fonte levemente maior para leitura fácil
-                          height: 1.6,  // Espaçamento de linha confortável
-                          fontWeight: FontWeight.w400
-                        ), 
-                        const HorizontalSpacing(0, 0), 
-                        const VerticalSpacing(0, 0), 
-                        const VerticalSpacing(0, 0), 
-                        null
-                      ),
-                      h1: DefaultTextBlockStyle(
-                         TextStyle(fontSize: 32, color: widget.textColor, height: 1.15, fontWeight: FontWeight.bold),
-                         const HorizontalSpacing(0, 0), const VerticalSpacing(16, 0), const VerticalSpacing(0, 0), null
-                      ),
+                    decoration: InputDecoration(
+                      hintText: "Título",
+                      hintStyle: TextStyle(color: effectiveHintColor),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.zero,
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                ],
+              ),
             ),
-          ),
-        ],
+            
+            SliverFillRemaining(
+              hasScrollBody: false, 
+              child: Column(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        // Request focus when tapping outside the precise text area
+                        if (!_editorFocusNode.hasFocus) {
+                           _editorFocusNode.requestFocus();
+                        }
+                      },
+                      child: QuillEditor.basic(
+                        controller: _controller,
+                        focusNode: _editorFocusNode, // Re-attached FocusNode
+                        // configurations removed
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 100), 
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
