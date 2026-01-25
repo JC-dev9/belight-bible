@@ -262,9 +262,9 @@ Não use abreviações nos links. O nome do livro deve estar completo.
         "Authorization": "Bearer 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", 
       },
       body: jsonEncode({
-        "model": "llama-3.3-70b-versatile",
+        "model": "meta-llama/llama-4-scout-17b-16e-instruct",
         "messages": messagesToSend, // Enviamos a lista completa aqui
-        "stream": false
+        "stream": false,
       }),
     );
 

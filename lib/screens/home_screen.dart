@@ -3,6 +3,7 @@ import 'package:flutter/services.dart'; // Para mudar a cor da barra de status d
 import 'bible_screen.dart';
 import 'chatbot_screen.dart';
 import 'saved_data_screen.dart';
+import 'connections_screen.dart';
 import '../utils/theme.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -127,6 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
                  _bibleKey.currentState?.refreshData();
               },
             ),
+            const ConnectionsScreen(),
           ],
         ),
       ),
@@ -179,6 +181,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icon(Icons.bookmarks_outlined),
                   selectedIcon: Icon(Icons.bookmarks),
                   label: 'Salvos',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.hub_outlined),
+                  selectedIcon: Icon(Icons.hub),
+                  label: 'Conexões',
                 ),
               ],
             );
