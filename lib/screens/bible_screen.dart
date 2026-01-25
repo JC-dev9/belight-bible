@@ -193,6 +193,7 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
       
       if (highlight.verse != -1) {
         verse['highlighted'] = Color(highlight.color);
+        verse['highlight_type'] = highlight.type; // Store the type ('block' or 'text')
       }
 
       // Merge Notes
@@ -284,9 +285,11 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
   }
 
   Future<void> _handleColorSelected(Color color) async {
+    final highlightType = _selectedHighlightStyle == HighlightStyle.fundoTexto ? 'text' : 'block';
     setState(() {
       for (var i in _selectedVerses) {
         _verses[i]['highlighted'] = color;
+        _verses[i]['highlight_type'] = highlightType; // Store type locally immediately
         final dbColor = color.value.toSigned(32);
         
         _supabaseService.saveHighlight(Highlight(
@@ -294,7 +297,7 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
           chapter: _selectedChapter,
           verse: _verses[i]['number'],
           color: dbColor,
-          type: _selectedHighlightStyle == HighlightStyle.fundoTexto ? 'text' : 'block',
+          type: highlightType,
         ));
       }
       _selectedVerses.clear();
@@ -305,6 +308,7 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
     setState(() {
       for (var i in _selectedVerses) {
         _verses[i]['highlighted'] = null;
+        _verses[i]['highlight_type'] = null; // Clear type as well
         _supabaseService.removeHighlight(_selectedBook, _selectedChapter, _verses[i]['number']);
       }
       _selectedVerses.clear();

@@ -84,15 +84,32 @@ class VerseList extends StatelessWidget {
               : (highlightValue == true ? AppTheme.accentGold : null);
 
           final hasNote = verse['note'] != null && verse['note'].toString().isNotEmpty;
-          final bool isBlock = selectedHighlightStyle == HighlightStyle.fundoVersiculo;
-          final bool isText = selectedHighlightStyle == HighlightStyle.fundoTexto;
+          
+          // Determine highlight type from STORED data (not global state)
+          // For selected verses, use global tool state. For unselected, use stored type.
+          final bool isSelected = selectedVerses.contains(index);
+          final String? storedType = verse['highlight_type'];
+          
+          final bool isBlock;
+          final bool isText;
+          
+          if (isSelected) {
+            // Selected verses: preview with current tool setting
+            isBlock = selectedHighlightStyle == HighlightStyle.fundoVersiculo;
+            isText = selectedHighlightStyle == HighlightStyle.fundoTexto;
+          } else if (highlightColor != null && storedType != null) {
+            // Unselected highlighted verses: use stored type
+            isBlock = storedType == 'block';
+            isText = storedType == 'text';
+          } else {
+            // No highlight or no type stored: default to block
+            isBlock = true;
+            isText = false;
+          }
           
           // Lógica de Foco
           final bool isFocused = focusedVerseIndex == index;
           final bool isDimmed = focusedVerseIndex != null && !isFocused;
-          
-          // Lógica de Seleção
-          final bool isSelected = selectedVerses.contains(index);
           
           final double opacity = isDimmed ? 0.3 : 1.0;
           final Color textColorWithFocus = baseTextColor.withOpacity(isDimmed ? 0.3 : 1.0);
