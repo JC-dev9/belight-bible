@@ -25,6 +25,7 @@ dependencies:
   graphview: ^1.2.0
   flutter_riverpod: ^2.6.1
   equatable: ^2.0.5
+  flutter_dotenv: ^6.0.0
 
 dev_dependencies:
   flutter_test:
@@ -38,3 +39,4 @@ flutter:
     - assets/bible/acf.json
     - assets/bible/arc.json
     - assets/bible/ntlh.json
+    - .env

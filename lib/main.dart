@@ -9,8 +9,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart'; // Import for FlutterQuillLocalizations
 
-const supabaseUrl = 'https://dupoveauficvwgtrvxsx.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR1cG92ZWF1ZmljdndndHJ2eHN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE0ODM2NTAsImV4cCI6MjA3NzA1OTY1MH0.9Gk_d6nj1cGSa6nbRHyuPmtiw7VU8Te7P8_qR5hRg8g';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,10 +18,13 @@ Future<void> main() async {
   await Hive.initFlutter();
   await Hive.openBox('bibleBox'); // caixa para armazenar a Bíblia offline
 
+  // Load environment variables
+  await dotenv.load(fileName: ".env");
+
   // Inicializa Supabase (para login, registro, etc.)
   await Supabase.initialize(
-    url: supabaseUrl,
-    anonKey: supabaseKey,
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
   runApp(const ProviderScope(child: MyApp()));
