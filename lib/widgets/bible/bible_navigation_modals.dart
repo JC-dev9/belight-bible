@@ -123,41 +123,52 @@ class BibleModals {
     showModalBottomSheet(
       context: context,
       backgroundColor: backgroundColor,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) {
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Versão da Bíblia',
-                  style: TextStyle(
-                      color: textColor,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              ...availableVersions.entries.map((entry) {
-                final isSelected = currentVersion == entry.key;
-                return ListTile(
-                  title: Text(entry.value,
-                      style: TextStyle(
-                          color: textColor,
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.normal)),
-                  trailing: isSelected
-                      ? Icon(Icons.check, color: activeColor)
-                      : null,
-                  onTap: () {
-                    if (!isSelected) {
-                        onVersionSelected(entry.key);
-                    }
-                    Navigator.pop(context);
-                  },
-                );
-              }),
-            ],
+        return ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.5,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Versão da Bíblia',
+                    style: TextStyle(
+                        color: textColor,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
+                Flexible(
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: availableVersions.entries.map((entry) {
+                      final isSelected = currentVersion == entry.key;
+                      return ListTile(
+                        title: Text(entry.value,
+                            style: TextStyle(
+                                color: textColor,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal)),
+                        trailing: isSelected
+                            ? Icon(Icons.check, color: activeColor)
+                            : null,
+                        onTap: () {
+                          if (!isSelected) {
+                              onVersionSelected(entry.key);
+                          }
+                          Navigator.pop(context);
+                        },
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

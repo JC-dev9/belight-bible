@@ -9,14 +9,11 @@ class BibleRepository {
 
   BibleRepository({required this.version});
 
-  // Lista de versões disponíveis no repo
+  // Versões disponíveis localmente em assets/bible/
   static const Map<String, String> availableVersions = {
     'ACF': 'Almeida Corrigida Fiel',
-    'ARA': 'Almeida Revista e Atualizada',
     'ARC': 'Almeida Revista e Corrigida',
-    'NTLH': 'NTA Século 21',
-    'JFAA': 'JFA Atualizada',
-    'NVI': 'Nova Versão Internacional',
+    'NTLH': 'Nova Tradução na Linguagem de Hoje',
   };
 
   /// Carrega a Bíblia localmente
