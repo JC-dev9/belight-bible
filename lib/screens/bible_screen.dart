@@ -598,13 +598,28 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
                         activeColor: _activeColor,
                         allBooks: _bibleRepository.allBooks,
                         selectedBook: _selectedBook,
-                        onBookSelected: (book) {
+                        chaptersPerBook: _bibleRepository.chaptersPerBook,
+                        getVerseCount: (book, chapter) => _bibleRepository.getVerseCount(book, chapter),
+                        onNavigationComplete: (book, chapter, verse) {
                           setState(() {
                             _selectedBook = book;
-                            _selectedChapter = 1;
+                            _selectedChapter = chapter;
                             _selectedVerses.clear();
                           });
-                          _loadChapter();
+                          _loadChapter().then((_) {
+                            // Scroll para o versículo selecionado
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (_verses.isNotEmpty && verse > 0 && verse <= _verses.length) {
+                                setState(() => _focusedVerseIndex = verse - 1);
+                                _itemScrollController.scrollTo(
+                                  index: verse - 1,
+                                  duration: const Duration(milliseconds: 500),
+                                  curve: Curves.easeInOutCubic,
+                                  alignment: 0.3,
+                                );
+                              }
+                            });
+                          });
                         },
                       ),
                       onSettingsTap: _showDisplaySettings,

@@ -93,4 +93,19 @@ class BibleRepository {
       };
     }).toList();
   }
+
+  /// Retorna a quantidade de versículos de um capítulo
+  Future<int> getVerseCount(String bookName, int chapter) async {
+    await ensureLoaded();
+    final bookData = _cachedBible?.firstWhere(
+      (b) => b['name'] == bookName,
+      orElse: () => null,
+    );
+    if (bookData == null) return 0;
+    final List<dynamic> allChapters = bookData['chapters'];
+    if (chapter < 1 || chapter > allChapters.length) return 0;
+    final List<dynamic> versesList = allChapters[chapter - 1];
+    return versesList.length;
+  }
 }
+

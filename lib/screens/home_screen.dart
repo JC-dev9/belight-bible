@@ -48,25 +48,10 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // Helper para obter cores baseadas no tema (apenas para a aba da Bíblia)
-  Color get _backgroundColor {
-    // Se não estiver na aba da Bíblia (1), usa cores padrão ou do sistema
-    if (_currentIndex != 1) {
-      final isDark = Theme.of(context).brightness == Brightness.dark;
-      return isDark ? AppColors.darkBg : Colors.grey.shade50;
-    }
-
-    switch (_bibleTheme) {
-      case ReadingTheme.dark: return AppColors.darkBg;
-      case ReadingTheme.sepia: return AppColors.sepiaBg;
-      default: return Colors.white;
-    }
-  }
-
+  // Cor do NavigationBar: só usa tema bíblico na aba da Bíblia
   Color get _navBarColor {
     final isSystemDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
     
-    // Se não for Bíblia, usa adaptativo
     if (_currentIndex != 1) {
       return isSystemDark ? Colors.grey.shade900 : Colors.white;
     }
@@ -78,7 +63,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Color get _contentColor {
+  // Cor dos ícones/labels do NavigationBar: só usa tema bíblico na aba da Bíblia
+  Color get _navContentColor {
     final isSystemDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
     
     if (_currentIndex != 1) {
@@ -95,70 +81,66 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final primaryColor = Colors.yellow.shade800;
+    final isSystemDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Ajusta Status Bar
+    // Ajusta Status Bar baseado na aba atual
+    final bool useLightIcons = 
+        (_currentIndex == 1 && _bibleTheme == ReadingTheme.dark) || isSystemDark;
+    
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-      statusBarColor: _backgroundColor,
-      statusBarIconBrightness: 
-          (_currentIndex == 1 && _bibleTheme == ReadingTheme.dark) || 
-          Theme.of(context).brightness == Brightness.dark
-          ? Brightness.light : Brightness.dark,
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: useLightIcons ? Brightness.light : Brightness.dark,
     ));
 
     return Scaffold(
-      backgroundColor: Colors.transparent, 
-      body: AnimatedContainer(
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOut,
-        color: _backgroundColor,
-        child: IndexedStack(
-          index: _currentIndex,
-          children: [
-            // 0: Home
-            const HomeTab(),
-            
-            // 1: Bíblia
-            BibleReaderScreen(
-              key: _bibleKey,
-              currentTheme: _bibleTheme,
-              onThemeChanged: _updateBibleTheme,
-              onAskAI: _switchToChatbot,
-            ),
-            
-            // 2: Planos
-            const PlansTab(),
-            
-            // 3: Chatbot (IA)
-            ChatBotScreen(
-              key: _chatBotKey, 
-              onNavigateToVerse: _navigateToVerse
-            ),
-            
-            // 4: Menu (Mais)
-            MenuTab(
-              currentTheme: _bibleTheme,
-              onNavigateToVerse: _navigateToVerse,
-              onDataChanged: () {
-                 // Quando algo muda em Salvos (delete/edit), recarrega a bíblia
-                 _bibleKey.currentState?.refreshData();
-              },
-            ),
-          ],
-        ),
+      // Cada aba tem o seu próprio Scaffold/background. Não forçamos cor aqui.
+      backgroundColor: isSystemDark ? AppColors.darkBg : Colors.grey.shade50,
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          // 0: Home
+          const HomeTab(),
+          
+          // 1: Bíblia (gere o proprio tema internamente)
+          BibleReaderScreen(
+            key: _bibleKey,
+            currentTheme: _bibleTheme,
+            onThemeChanged: _updateBibleTheme,
+            onAskAI: _switchToChatbot,
+          ),
+          
+          // 2: Planos
+          const PlansTab(),
+          
+          // 3: Chatbot (IA)
+          ChatBotScreen(
+            key: _chatBotKey, 
+            onNavigateToVerse: _navigateToVerse
+          ),
+          
+          // 4: Menu (Mais)
+          MenuTab(
+            currentTheme: _bibleTheme,
+            onNavigateToVerse: _navigateToVerse,
+            onDataChanged: () {
+               _bibleKey.currentState?.refreshData();
+            },
+          ),
+        ],
       ),
 
       bottomNavigationBar: NavigationBarTheme(
         data: NavigationBarThemeData(
-          iconTheme: MaterialStateProperty.resolveWith((states) {
-            final color = states.contains(MaterialState.selected)
+          iconTheme: WidgetStateProperty.resolveWith((states) {
+            final color = states.contains(WidgetState.selected)
                 ? primaryColor
-                : _contentColor;
+                : _navContentColor;
             return IconThemeData(color: color, size: 24);
           }),
-          labelTextStyle: MaterialStateProperty.resolveWith((states) {
-            final color = states.contains(MaterialState.selected)
+          labelTextStyle: WidgetStateProperty.resolveWith((states) {
+            final color = states.contains(WidgetState.selected)
                 ? primaryColor
-                : _contentColor;
+                : _navContentColor;
             return TextStyle(color: color, fontWeight: FontWeight.w500, fontSize: 12);
           }),
         ),
@@ -172,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onDestinationSelected: (index) { 
                 setState(() => _currentIndex = index);
               },
-              height: 70, // Slightly more compact
+              height: 70,
               elevation: 0,
               backgroundColor: color,
               indicatorColor: primaryColor.withOpacity(0.15),
