@@ -99,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
         index: _currentIndex,
         children: [
           // 0: Home
-          const HomeTab(),
+          HomeTab(onNavigateToVerse: _navigateToVerse),
           
           // 1: Bíblia (gere o proprio tema internamente)
           BibleReaderScreen(

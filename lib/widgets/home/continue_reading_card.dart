@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
 
+/// Card "Continuar Leitura" — exibe a última posição de leitura do Supabase.
 class ContinueReadingCard extends StatelessWidget {
+  final String book;
+  final int chapter;
   final VoidCallback onTap;
 
-  const ContinueReadingCard({super.key, required this.onTap});
+  const ContinueReadingCard({
+    super.key,
+    required this.book,
+    required this.chapter,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -47,9 +55,9 @@ class ContinueReadingCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'Salmos 23', // Mock
-                    style: TextStyle(
+                  Text(
+                    '$book $chapter',
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),

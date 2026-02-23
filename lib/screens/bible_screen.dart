@@ -156,6 +156,9 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
         _isLoading = false;
       });
 
+      // Atualizar progresso de leitura no Supabase (streak + posição)
+      _supabaseService.updateReadingProgress(_selectedBook, _selectedChapter, 1);
+
       // Resetar posição do scroll
       if (_verses.isNotEmpty) {
         try {

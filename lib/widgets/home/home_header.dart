@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../utils/theme.dart';
 
+/// Header da Home — exibe nome dinâmico e streak real do Supabase.
 class HomeHeader extends StatelessWidget {
-  const HomeHeader({super.key});
+  final String displayName;
+  final int streak;
+
+  const HomeHeader({
+    super.key,
+    required this.displayName,
+    required this.streak,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final user = Supabase.instance.client.auth.currentUser;
-    // Tenta pegar o nome do metadata, se não tiver, usa parte do email
-    final String name = user?.userMetadata?['name'] ?? 
-                        user?.email?.split('@').first ?? 
-                        'Visitante';
-
     // Capitalize first letter
-    final displayName = name.isEmpty ? 'Visitante' : 
-        '${name[0].toUpperCase()}${name.substring(1)}';
+    final name = displayName.isEmpty ? 'Visitante' : displayName;
+    final capitalizedName = '${name[0].toUpperCase()}${name.substring(1)}';
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -32,17 +33,17 @@ class HomeHeader extends StatelessWidget {
               ),
             ),
             Text(
-              displayName,
+              capitalizedName,
               style: const TextStyle(
                 fontSize: 26,
-                fontWeight: FontWeight.w800, // Extra bold for impact
+                fontWeight: FontWeight.w800,
                 letterSpacing: -0.5,
               ),
             ),
           ],
         ),
         
-        // Streak Counter
+        // Streak Counter (dinâmico)
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
@@ -54,9 +55,9 @@ class HomeHeader extends StatelessWidget {
             children: [
               const Icon(Icons.local_fire_department, color: Colors.orange, size: 20),
               const SizedBox(width: 6),
-              const Text(
-                '3', // Mock data
-                style: TextStyle(
+              Text(
+                '$streak',
+                style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                   color: Colors.orange,
@@ -64,7 +65,7 @@ class HomeHeader extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                'dias',
+                streak == 1 ? 'dia' : 'dias',
                 style: TextStyle(
                   fontSize: 12,
                   color: Theme.of(context).hintColor,

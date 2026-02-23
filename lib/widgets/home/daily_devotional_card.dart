@@ -1,10 +1,25 @@
 import 'package:flutter/material.dart';
 
+/// Card do devocional diário — recebe dados dinâmicos do Supabase.
 class DailyDevotionalCard extends StatelessWidget {
-  const DailyDevotionalCard({super.key});
+  final String? title;
+  final String? content;
+  final int readingTimeMin;
+
+  const DailyDevotionalCard({
+    super.key,
+    this.title,
+    this.content,
+    this.readingTimeMin = 3,
+  });
 
   @override
   Widget build(BuildContext context) {
+    if (title == null && content == null) {
+      // Estado vazio — sem devocional para hoje
+      return const SizedBox.shrink();
+    }
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -36,7 +51,7 @@ class DailyDevotionalCard extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                '3 min',
+                '$readingTimeMin min',
                 style: TextStyle(
                   fontSize: 12,
                   color: Theme.of(context).hintColor,
@@ -45,16 +60,16 @@ class DailyDevotionalCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Confie no Processo',
-            style: TextStyle(
+          Text(
+            title ?? 'Devocional',
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Muitas vezes queremos que as coisas aconteçam no nosso tempo, mas Deus tem o tempo perfeito para tudo. A paciência não é apenas esperar, mas como nos comportamos enquanto esperamos...',
+            content ?? '',
             style: TextStyle(
               fontSize: 14,
               color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.8),
@@ -68,7 +83,25 @@ class DailyDevotionalCard extends StatelessWidget {
             width: double.infinity,
             child: OutlinedButton(
               onPressed: () {
-                // TODO: Open full devotional
+                // Abrir devocional completo num dialog
+                showDialog(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: Text(title ?? 'Devocional'),
+                    content: SingleChildScrollView(
+                      child: Text(
+                        content ?? '',
+                        style: const TextStyle(fontSize: 16, height: 1.6),
+                      ),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Fechar'),
+                      ),
+                    ],
+                  ),
+                );
               },
               style: OutlinedButton.styleFrom(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

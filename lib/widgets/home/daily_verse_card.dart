@@ -1,20 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
+/// Card do versículo do dia — recebe texto e referência dinâmicos do Supabase.
 class DailyVerseCard extends StatelessWidget {
-  const DailyVerseCard({super.key});
+  final String? verseText;
+  final String? reference;
+
+  const DailyVerseCard({
+    super.key,
+    this.verseText,
+    this.reference,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final text = verseText ?? 'Carregando...';
+    final ref = reference ?? '';
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        // Modern Gradient - Softer & More Elegant
         gradient: LinearGradient(
           colors: [
             Theme.of(context).brightness == Brightness.dark 
-                ? const Color(0xFF3E3E3E) // Darker variant for dark mode
-                : const Color(0xFFF9F1E5), // Soft elegant cream/gold for light
+                ? const Color(0xFF3E3E3E)
+                : const Color(0xFFF9F1E5),
             Theme.of(context).brightness == Brightness.dark 
                 ? const Color(0xFF2C2C2C)
                 : const Color(0xFFF0E6D2),
@@ -25,7 +35,7 @@ class DailyVerseCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05), // Softer shadow
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 15,
             offset: const Offset(0, 4),
           ),
@@ -33,7 +43,7 @@ class DailyVerseCard extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // Background decorative circle (subtle)
+          // Círculo decorativo
           Positioned(
             right: -30,
             top: -30,
@@ -82,7 +92,7 @@ class DailyVerseCard extends StatelessWidget {
                               : Colors.black.withOpacity(0.6), 
                           size: 20),
                       onPressed: () {
-                         Share.share('"Porque Deus amou o mundo de tal maneira..." João 3:16 - App Bíblia');
+                         Share.share('"$text" $ref - BeLight Bible');
                       },
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
@@ -93,7 +103,7 @@ class DailyVerseCard extends StatelessWidget {
                 const SizedBox(height: 20),
                 
                 Text(
-                  '"Porque Deus amou o mundo de tal maneira que deu o seu Filho unigênito, para que todo aquele que nele crê não pereça, mas tenha a vida eterna."',
+                  '"$text"',
                   style: TextStyle(
                     color: Theme.of(context).textTheme.bodyLarge?.color,
                     fontSize: 18, 
@@ -108,7 +118,7 @@ class DailyVerseCard extends StatelessWidget {
                 Align(
                   alignment: Alignment.centerRight,
                   child: Text(
-                    'João 3:16',
+                    ref,
                     style: TextStyle(
                       color: Theme.of(context).hintColor,
                       fontSize: 14,
