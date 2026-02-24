@@ -36,13 +36,10 @@ class ChatBotScreenState extends State<ChatBotScreen> {
   void sendPrompt(String prompt) {
     if (prompt.isEmpty) return;
     
-    // Limpa mensagens anteriores se quiser um chat fresco, ou mantém o histórico.
-    // Aqui vou manter o histórico, mas focar na nova pergunta.
     setState(() {
       _controller.text = prompt;
     });
 
-    // Envia automaticamente
     _sendMessage();
   }
 
@@ -107,20 +104,13 @@ class ChatBotScreenState extends State<ChatBotScreen> {
                           ),
                           onTapLink: (text, href, title) {
                             if (href != null && href.startsWith('bible://')) {
-                              final uri = Uri.parse(href);
-                              // bible://Book/Chapter/Verse -> segments: [Book, Chapter, Verse]
-                              // Atenção: Uri.parse pode normalizar os path segments.
-                              // Vamos fazer um split manual mais seguro se o Uri falhar com acentos
-                              
                               final safePath = href.replaceFirst('bible://', '');
                               final parts = safePath.split('/');
                               
                               if (parts.length >= 3) {
                                 final book = Uri.decodeComponent(parts[0]);
                                 final chapter = int.tryParse(parts[1]) ?? 1;
-                                
-                                // Fix: Handle ranges like "11-21" by taking the first part
-                                final verseString = parts[2].split('-')[0]; // "11-21" -> "11"
+                                final verseString = parts[2].split('-')[0];
                                 final verse = int.tryParse(verseString) ?? 1;
                                 
                                 if (widget.onNavigateToVerse != null) {
@@ -163,10 +153,10 @@ class ChatBotScreenState extends State<ChatBotScreen> {
                     ? Colors.grey[800]
                     : Colors.grey[200],
                 contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Ajuste vertical
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
               minLines: 1,
-              maxLines: 5, // Cresce até 5 linhas
+              maxLines: 5,
               keyboardType: TextInputType.multiline,
             ),
           ),
@@ -197,14 +187,14 @@ class ChatBotScreenState extends State<ChatBotScreen> {
 
     _scrollToBottom();
 
-    // Cria a bolha do bot vazia
     final botMessage = _ChatMessage(text: '', isUser: false);
     setState(() {
       _messages.add(botMessage);
     });
     _scrollToBottom();
 
-    await _sendToGroq(text, botMessage);
+    // Sistema de fallback: tenta Groq primeiro, depois Gemini
+    await _sendWithFallback(text, botMessage);
 
     setState(() {
       _isSending = false;
@@ -212,8 +202,10 @@ class ChatBotScreenState extends State<ChatBotScreen> {
     _scrollToBottom();
   }
 
-  Future<void> _sendToGroq(String pergunta, _ChatMessage botMessage) async {
-  const systemPrompt = """
+  // =========================================================================
+  // SYSTEM PROMPT (compartilhado entre Groq e Gemini)
+  // =========================================================================
+  static const _systemPrompt = """
 Você é um especialista em Bíblia, teologia cristã e princípios do cristianismo.
 Todas as suas respostas devem ser baseadas nas Escrituras Sagradas, na fé cristã e em valores bíblicos.
 Responda sempre em Português de Portugal.
@@ -229,67 +221,142 @@ Exemplos:
 Não use abreviações nos links. O nome do livro deve estar completo.
 """;
 
-  List<Map<String, String>> messagesToSend = [];
+  // =========================================================================
+  // FALLBACK: Groq → Gemini
+  // =========================================================================
 
-  // 1. Sempre adiciona o System Prompt primeiro (ele é obrigatório e não conta na janela)
-  messagesToSend.add({"role": "system", "content": systemPrompt});
+  Future<void> _sendWithFallback(String pergunta, _ChatMessage botMessage) async {
+    // 1. Tenta Groq (principal — grátis e ultra rápido)
+    final groqSuccess = await _sendToGroq(pergunta, botMessage);
+    if (groqSuccess) return;
 
-  // 2. Define o limite de mensagens
-  int limiteDeHistorico = 3;
-  
-  // Filtra a lista para pegar apenas as últimas N mensagens, excluindo a mensagem atual do bot (que está vazia)
-  final mensagensValidas = _messages.where((m) => m != botMessage).toList();
-  
-  final historicoRecente = mensagensValidas.length > limiteDeHistorico
-      ? mensagensValidas.sublist(mensagensValidas.length - limiteDeHistorico)
-      : mensagensValidas;
+    // 2. Fallback: Gemini Flash (backup gratuito)
+    debugPrint('⚠️ Groq falhou. Tentando Gemini como fallback...');
+    final geminiSuccess = await _sendToGemini(pergunta, botMessage);
+    if (geminiSuccess) return;
 
-  // 3. Adiciona o histórico filtrado
-  for (var msg in historicoRecente) {
-    messagesToSend.add({
-      "role": msg.isUser ? "user" : "assistant",
-      "content": msg.text
+    // 3. Ambos falharam
+    setState(() {
+      botMessage.text = 'Desculpe, não consegui conectar ao serviço. Tente novamente em alguns instantes.';
     });
   }
 
-  final url = Uri.parse("https://api.groq.com/openai/v1/chat/completions");
+  // =========================================================================
+  // GROQ (Principal)
+  // =========================================================================
 
-  try {
-    final response = await http.post(
-      url,
-      headers: {
-        "Content-Type": "application/json",
+  List<Map<String, String>> _buildGroqMessages(_ChatMessage botMessage) {
+    final messages = <Map<String, String>>[];
+    messages.add({"role": "system", "content": _systemPrompt});
 
-        "Authorization": "Bearer ${dotenv.env['GROQ_API_KEY'] ?? ''}", 
-      },
-      body: jsonEncode({
-        "model": "meta-llama/llama-4-scout-17b-16e-instruct",
-        "messages": messagesToSend, // Enviamos a lista completa aqui
-        "stream": false,
-      }),
-    );
+    final mensagensValidas = _messages.where((m) => m != botMessage).toList();
+    final historicoRecente = mensagensValidas.length > 3
+        ? mensagensValidas.sublist(mensagensValidas.length - 3)
+        : mensagensValidas;
 
-    if (response.statusCode == 200) {
-      final jsonResp = jsonDecode(utf8.decode(response.bodyBytes)); // utf8 para corrigir acentuação
-      final text = jsonResp['choices']?[0]?['message']?['content'] ?? '';
-      
-      setState(() {
-        botMessage.text = text;
-      });
-      _scrollToBottom();
-    } else {
-      setState(() {
-        botMessage.text =
-            "Erro na API: ${response.statusCode} ${response.reasonPhrase}";
+    for (var msg in historicoRecente) {
+      messages.add({
+        "role": msg.isUser ? "user" : "assistant",
+        "content": msg.text
       });
     }
-  } catch (e) {
-    setState(() {
-      botMessage.text = "Erro ao conectar com a API: $e";
-    });
+    return messages;
   }
-}
 
+  Future<bool> _sendToGroq(String pergunta, _ChatMessage botMessage) async {
+    final apiKey = dotenv.env['GROQ_API_KEY'] ?? '';
+    if (apiKey.isEmpty) {
+      debugPrint('⚠️ GROQ_API_KEY não encontrada no .env');
+      return false;
+    }
+
+    final url = Uri.parse("https://api.groq.com/openai/v1/chat/completions");
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $apiKey",
+        },
+        body: jsonEncode({
+          "model": "meta-llama/llama-4-scout-17b-16e-instruct",
+          "messages": _buildGroqMessages(botMessage),
+          "stream": false,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final jsonResp = jsonDecode(utf8.decode(response.bodyBytes));
+        final text = jsonResp['choices']?[0]?['message']?['content'] ?? '';
+        setState(() { botMessage.text = text; });
+        _scrollToBottom();
+        return true;
+      } else {
+        debugPrint('Groq erro: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      debugPrint('Groq conexão erro: $e');
+      return false;
+    }
+  }
+
+  // =========================================================================
+  // GEMINI (Fallback)
+  // =========================================================================
+
+  Future<bool> _sendToGemini(String pergunta, _ChatMessage botMessage) async {
+    final apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
+    if (apiKey.isEmpty) {
+      debugPrint('⚠️ GEMINI_API_KEY não encontrada no .env');
+      return false;
+    }
+
+    final contents = <Map<String, dynamic>>[];
+    final mensagensValidas = _messages.where((m) => m != botMessage).toList();
+    final historicoRecente = mensagensValidas.length > 3
+        ? mensagensValidas.sublist(mensagensValidas.length - 3)
+        : mensagensValidas;
+
+    for (var msg in historicoRecente) {
+      contents.add({
+        "role": msg.isUser ? "user" : "model",
+        "parts": [{"text": msg.text}]
+      });
+    }
+
+    final url = Uri.parse(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$apiKey"
+    );
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "system_instruction": {
+            "parts": [{"text": _systemPrompt}]
+          },
+          "contents": contents,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final jsonResp = jsonDecode(utf8.decode(response.bodyBytes));
+        final text = jsonResp['candidates']?[0]?['content']?['parts']?[0]?['text'] ?? '';
+        setState(() { botMessage.text = text; });
+        _scrollToBottom();
+        return true;
+      } else {
+        debugPrint('Gemini erro: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      debugPrint('Gemini conexão erro: $e');
+      return false;
+    }
+  }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
