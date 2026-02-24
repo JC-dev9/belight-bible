@@ -106,6 +106,8 @@ class _HomeTabState extends State<HomeTab> {
                               title: _devotional?.title,
                               content: _devotional?.content,
                               readingTimeMin: _devotional?.readingTimeMin ?? 3,
+                              publishDate: _devotional?.publishDate,
+                              devotionalId: _devotional?.id,
                             ),
                             const SizedBox(height: 80),
                           ],

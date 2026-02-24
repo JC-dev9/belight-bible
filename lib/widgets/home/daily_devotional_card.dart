@@ -1,22 +1,26 @@
 import 'package:flutter/material.dart';
+import '../../screens/devotional_reader_screen.dart';
 
 /// Card do devocional diário — recebe dados dinâmicos do Supabase.
 class DailyDevotionalCard extends StatelessWidget {
   final String? title;
   final String? content;
   final int readingTimeMin;
+  final DateTime? publishDate;
+  final String? devotionalId;
 
   const DailyDevotionalCard({
     super.key,
     this.title,
     this.content,
     this.readingTimeMin = 3,
+    this.publishDate,
+    this.devotionalId,
   });
 
   @override
   Widget build(BuildContext context) {
     if (title == null && content == null) {
-      // Estado vazio — sem devocional para hoje
       return const SizedBox.shrink();
     }
 
@@ -25,10 +29,10 @@ class DailyDevotionalCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -72,7 +76,7 @@ class DailyDevotionalCard extends StatelessWidget {
             content ?? '',
             style: TextStyle(
               fontSize: 14,
-              color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.8),
+              color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
               height: 1.5,
             ),
             maxLines: 3,
@@ -83,23 +87,16 @@ class DailyDevotionalCard extends StatelessWidget {
             width: double.infinity,
             child: OutlinedButton(
               onPressed: () {
-                // Abrir devocional completo num dialog
-                showDialog(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: Text(title ?? 'Devocional'),
-                    content: SingleChildScrollView(
-                      child: Text(
-                        content ?? '',
-                        style: const TextStyle(fontSize: 16, height: 1.6),
-                      ),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => DevotionalReaderScreen(
+                      title: title ?? 'Devocional',
+                      content: content ?? '',
+                      readingTimeMin: readingTimeMin,
+                      publishDate: publishDate,
+                      devotionalId: devotionalId,
                     ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        child: const Text('Fechar'),
-                      ),
-                    ],
                   ),
                 );
               },

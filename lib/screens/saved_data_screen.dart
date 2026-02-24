@@ -2,9 +2,11 @@ import 'dart:convert'; // Required for jsonDecode/jsonEncode
 import 'package:flutter/material.dart';
 import '../utils/theme.dart';
 import '../data/user_data_model.dart';
+import '../data/models/dynamic_models.dart';
 import '../data/supabase_service.dart';
 import '../data/bible_repository.dart';
 import 'note_editor_screen.dart';
+import 'devotional_reader_screen.dart';
 import 'package:flutter/services.dart';
 
 class SavedDataScreen extends StatefulWidget {
@@ -30,12 +32,13 @@ class SavedDataScreenState extends State<SavedDataScreen> with SingleTickerProvi
   
   List<Highlight> _highlights = [];
   List<UserNote> _notes = [];
+  List<Devotional> _savedDevotionals = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _bibleRepository.ensureLoaded(); // Ensure bible data is loaded
     _loadData();
   }
@@ -48,12 +51,16 @@ class SavedDataScreenState extends State<SavedDataScreen> with SingleTickerProvi
   Future<void> _loadData() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
-    final h = await _supabaseService.getAllHighlights();
-    final n = await _supabaseService.getAllNotes();
+    final results = await Future.wait([
+      _supabaseService.getAllHighlights(),
+      _supabaseService.getAllNotes(),
+      _supabaseService.getSavedDevotionals(),
+    ]);
     if (mounted) {
       setState(() {
-        _highlights = h;
-        _notes = n;
+        _highlights = results[0] as List<Highlight>;
+        _notes = results[1] as List<UserNote>;
+        _savedDevotionals = results[2] as List<Devotional>;
         _isLoading = false;
       });
     }
@@ -251,6 +258,7 @@ class SavedDataScreenState extends State<SavedDataScreen> with SingleTickerProvi
           tabs: const [
             Tab(text: "Destaques"),
             Tab(text: "Anotações"),
+            Tab(text: "Devocionais"),
           ],
         ),
       ),
@@ -261,6 +269,7 @@ class SavedDataScreenState extends State<SavedDataScreen> with SingleTickerProvi
             children: [
               _buildHighlightsTab(),
               _buildNotesTab(),
+              _buildDevotionalsTab(),
             ],
           ),
     );
@@ -496,5 +505,111 @@ class SavedDataScreenState extends State<SavedDataScreen> with SingleTickerProvi
   String _formatDate(DateTime? dt) {
     if (dt == null) return '';
     return "${dt.day}/${dt.month}/${dt.year}";
+  }
+
+  // --- DEVOTIONALS TAB ---
+  Widget _buildDevotionalsTab() {
+    if (_savedDevotionals.isEmpty) {
+      return _buildEmptyState('Nenhum devocional salvo.\nSalve devocionais tocando no ícone 🔖');
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _savedDevotionals.length,
+      itemBuilder: (context, index) {
+        final devotional = _savedDevotionals[index];
+        return Dismissible(
+          key: Key('devotional_${devotional.id}'),
+          direction: DismissDirection.endToStart,
+          background: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 20),
+            decoration: BoxDecoration(
+              color: Colors.red.shade400,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.delete_outline, color: Colors.white, size: 28),
+          ),
+          confirmDismiss: (_) => _confirmDelete('Devocional salvo'),
+          onDismissed: (_) async {
+            final removed = _savedDevotionals.removeAt(index);
+            setState(() {});
+            await _supabaseService.unsaveDevotional(removed.id);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Devocional removido dos salvos'),
+                  action: SnackBarAction(
+                    label: 'Desfazer',
+                    onPressed: () async {
+                      await _supabaseService.saveDevotional(removed.id);
+                      _loadData();
+                    },
+                  ),
+                ),
+              );
+            }
+          },
+          child: GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => DevotionalReaderScreen(
+                    title: devotional.title,
+                    content: devotional.content,
+                    readingTimeMin: devotional.readingTimeMin,
+                    publishDate: devotional.publishDate,
+                    devotionalId: devotional.id,
+                  ),
+                ),
+              );
+            },
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _textColor.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _textColor.withOpacity(0.1)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.brown.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(Icons.coffee, color: Colors.brown.shade400, size: 22),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          devotional.title,
+                          style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 15),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${_formatDate(devotional.publishDate)} • ${devotional.readingTimeMin} min',
+                          style: TextStyle(color: _textColor.withOpacity(0.5), fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.arrow_forward_ios, size: 14, color: _textColor.withOpacity(0.3)),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 }

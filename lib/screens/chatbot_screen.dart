@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
 class ChatBotScreen extends StatefulWidget {
@@ -259,7 +260,7 @@ Não use abreviações nos links. O nome do livro deve estar completo.
       headers: {
         "Content-Type": "application/json",
 
-        "Authorization": "Bearer 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", 
+        "Authorization": "Bearer ${dotenv.env['GROQ_API_KEY'] ?? ''}", 
       },
       body: jsonEncode({
         "model": "meta-llama/llama-4-scout-17b-16e-instruct",

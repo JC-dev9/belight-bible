@@ -401,4 +401,71 @@ class SupabaseService {
       return 0;
     }
   }
+
+  // ===========================================================================
+  // SAVED DEVOTIONALS
+  // ===========================================================================
+
+  /// Verifica se um devocional está salvo.
+  Future<bool> isDevotionalSaved(String devotionalId) async {
+    try {
+      if (_userId == null) return false;
+      final response = await _client
+          .from('saved_devotionals')
+          .select('id')
+          .eq('user_id', _userId!)
+          .eq('devotional_id', devotionalId)
+          .maybeSingle();
+      return response != null;
+    } catch (e) {
+      debugPrint('Error checking saved devotional: $e');
+      return false;
+    }
+  }
+
+  /// Salva um devocional.
+  Future<void> saveDevotional(String devotionalId) async {
+    try {
+      if (_userId == null) return;
+      await _client.from('saved_devotionals').upsert({
+        'user_id': _userId,
+        'devotional_id': devotionalId,
+      }, onConflict: 'user_id, devotional_id');
+    } catch (e) {
+      debugPrint('Error saving devotional: $e');
+    }
+  }
+
+  /// Remove um devocional salvo.
+  Future<void> unsaveDevotional(String devotionalId) async {
+    try {
+      if (_userId == null) return;
+      await _client
+          .from('saved_devotionals')
+          .delete()
+          .eq('user_id', _userId!)
+          .eq('devotional_id', devotionalId);
+    } catch (e) {
+      debugPrint('Error unsaving devotional: $e');
+    }
+  }
+
+  /// Busca todos os devocionais salvos com os dados completos.
+  Future<List<Devotional>> getSavedDevotionals() async {
+    try {
+      if (_userId == null) return [];
+      final response = await _client
+          .from('saved_devotionals')
+          .select('devotional_id, devotionals(*)')
+          .eq('user_id', _userId!)
+          .order('saved_at', ascending: false);
+      return (response as List)
+          .where((e) => e['devotionals'] != null)
+          .map((e) => Devotional.fromJson(e['devotionals']))
+          .toList();
+    } catch (e) {
+      debugPrint('Error fetching saved devotionals: $e');
+      return [];
+    }
+  }
 }
