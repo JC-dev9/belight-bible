@@ -1,81 +1,108 @@
 import 'package:flutter/material.dart';
-import '../../utils/theme.dart';
 
-/// Header da Home — exibe nome dinâmico e streak real do Supabase.
+/// Header do Home — saudação baseada na hora do dia com streak.
 class HomeHeader extends StatelessWidget {
-  final String displayName;
+  final String? displayName;
   final int streak;
 
   const HomeHeader({
     super.key,
-    required this.displayName,
-    required this.streak,
+    this.displayName,
+    this.streak = 0,
   });
+
+  String get _greeting {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Bom dia';
+    if (hour < 18) return 'Boa tarde';
+    return 'Boa noite';
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Capitalize first letter
-    final name = displayName.isEmpty ? 'Visitante' : displayName;
-    final capitalizedName = '${name[0].toUpperCase()}${name.substring(1)}';
+    final theme = Theme.of(context);
+    final txt = theme.textTheme.bodyMedium?.color ?? Colors.black;
+    final name = displayName ?? 'Amigo';
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Olá,',
-              style: TextStyle(
-                fontSize: 16,
-                color: Theme.of(context).hintColor,
-                fontWeight: FontWeight.w400,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Avatar
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.amber.shade600, Colors.orange.shade400],
               ),
+              borderRadius: BorderRadius.circular(14),
             ),
-            Text(
-              capitalizedName,
-              style: const TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.5,
-              ),
-            ),
-          ],
-        ),
-        
-        // Streak Counter (dinâmico)
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: AppTheme.accentGold.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppTheme.accentGold.withOpacity(0.3)),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.local_fire_department, color: Colors.orange, size: 20),
-              const SizedBox(width: 6),
-              Text(
-                '$streak',
+            child: Center(
+              child: Text(
+                name.substring(0, 1).toUpperCase(),
                 style: const TextStyle(
+                  fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: Colors.orange,
+                  color: Colors.white,
                 ),
               ),
-              const SizedBox(width: 4),
-              Text(
-                streak == 1 ? 'dia' : 'dias',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).hintColor,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ],
+          const SizedBox(width: 14),
+
+          // Saudação
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$_greeting,',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: txt.withOpacity(0.5),
+                  ),
+                ),
+                Text(
+                  name.split(' ').first,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: txt,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Streak badge
+          if (streak > 0)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.orange.withOpacity(0.15)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('🔥', style: TextStyle(fontSize: 16)),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$streak',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Colors.orange.shade700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
