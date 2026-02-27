@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../main.dart' show HiveKeys;
 import 'home_screen.dart';
 
-// Tela de login principal (Stateful para gerenciar inputs)
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -12,20 +14,92 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // Controladores dos campos de texto
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  // Estado dos controles (lembrar-me e visibilidade da senha)
   bool _rememberMe = true;
   bool _obscurePassword = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
-    // Liberar recursos dos controladores ao dar dispose
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  /// Login com email e senha
+  Future<void> _handleEmailLogin() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      _showSnackBar('Preencha todos os campos', isError: true);
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await Supabase.instance.client.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+
+      if (response.user != null) {
+        // Salvar preferência "Lembrar-me"
+        final settingsBox = Hive.box(HiveKeys.settingsBox);
+        await settingsBox.put(HiveKeys.rememberMe, _rememberMe);
+
+        _showSnackBar('Login realizado com sucesso!');
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/home');
+        }
+      }
+    } on AuthException catch (e) {
+      _showSnackBar(e.message, isError: true);
+    } catch (e) {
+      _showSnackBar('Erro inesperado. Tente novamente.', isError: true);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  /// Login social com o provedor OAuth (Google ou Facebook)
+  Future<void> _handleOAuthLogin(OAuthProvider provider) async {
+    try {
+      final providerName = provider == OAuthProvider.google ? 'Google' : 'Facebook';
+
+      await Supabase.instance.client.auth.signInWithOAuth(
+        provider,
+        redirectTo: 'io.supabase.belightapp://login-callback/',
+      );
+
+      // O OAuth redireciona o utilizador — a sessão é restaurada ao voltar.
+      // O listener no Supabase cuida da navegação.
+      // Para web, escutamos as mudanças de auth state:
+      Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+        if (data.event == AuthChangeEvent.signedIn && mounted) {
+          final settingsBox = Hive.box(HiveKeys.settingsBox);
+          settingsBox.put(HiveKeys.rememberMe, _rememberMe);
+          Navigator.pushReplacementNamed(context, '/home');
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        _showSnackBar('Erro no login social. Tente novamente.', isError: true);
+      }
+    }
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.redAccent : Colors.green,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -43,10 +117,7 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 32),
-
-                // Logo centralizado
                 Center(child: _buildLogo(isDark)),
-
                 const SizedBox(height: 20),
 
                 // Texto de boas-vindas
@@ -58,10 +129,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     color: theme.textTheme.bodyMedium?.color,
                   ),
                 ),
-
                 const SizedBox(height: 8),
-
-                // Subtítulo explicativo
                 Text(
                   'Descubra escolhas ilimitadas e conveniência\nsem igual.',
                   style: TextStyle(
@@ -70,87 +138,40 @@ class _LoginScreenState extends State<LoginScreen> {
                     height: 1.4,
                   ),
                 ),
-
                 const SizedBox(height: 32),
 
-                // Campo de E-Mail com estilo
-                Container(
-                  decoration: BoxDecoration(
-                    color: theme.cardColor,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: theme.dividerColor.withValues(alpha: 0.4),
-                    ),
-                  ),
-                  child: TextField(
-                    controller: _emailController,
-                    decoration: InputDecoration(
-                      hintText: 'E-mail',
-                      hintStyle: TextStyle(
-                        color: theme.hintColor.withValues(alpha: 0.7),
-                      ),
-                      prefixIcon: Icon(
-                        Icons.mail_outline,
-                        color: theme.hintColor.withValues(alpha: 0.7),
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
-                      ),
-                    ),
-                    keyboardType: TextInputType.emailAddress,
-                  ),
+                // Campo de E-Mail
+                _buildInputField(
+                  controller: _emailController,
+                  hint: 'E-mail',
+                  prefixIcon: Icons.mail_outline,
+                  keyboardType: TextInputType.emailAddress,
+                  theme: theme,
                 ),
-
                 const SizedBox(height: 16),
 
-                // Campo de senha com botão para mostrar/ocultar
-                Container(
-                  decoration: BoxDecoration(
-                    color: theme.cardColor,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: theme.dividerColor.withValues(alpha: 0.4),
+                // Campo de Senha
+                _buildInputField(
+                  controller: _passwordController,
+                  hint: 'Palavra-passe',
+                  prefixIcon: Icons.lock_outline,
+                  obscureText: _obscurePassword,
+                  theme: theme,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      color: theme.hintColor.withValues(alpha: 0.7),
                     ),
-                  ),
-                  child: TextField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    decoration: InputDecoration(
-                      hintText: 'Palavra-passe',
-                      hintStyle: TextStyle(
-                        color: theme.hintColor.withValues(alpha: 0.7),
-                      ),
-                      prefixIcon: Icon(
-                        Icons.lock_outline,
-                        color: theme.hintColor.withValues(alpha: 0.7),
-                      ),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                          color: theme.hintColor.withValues(alpha: 0.7),
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
-                      ),
-                    ),
+                    onPressed: () {
+                      setState(() => _obscurePassword = !_obscurePassword);
+                    },
                   ),
                 ),
-
                 const SizedBox(height: 12),
 
-                // Linha com "Lembrar-me" e "Esqueceu a palavra-passe?"
+                // "Lembrar-me" e "Esqueceu a palavra-passe?"
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -162,9 +183,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: Checkbox(
                             value: _rememberMe,
                             onChanged: (value) {
-                              setState(() {
-                                _rememberMe = value ?? false;
-                              });
+                              setState(() => _rememberMe = value ?? false);
                             },
                             activeColor: Colors.yellow.shade700,
                             shape: RoundedRectangleBorder(
@@ -196,7 +215,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 24),
 
                 // Botão de Iniciar Sessão
@@ -204,65 +222,34 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: () async {
-                      final email = _emailController.text.trim();
-                      final password = _passwordController.text.trim();
-
-                      if (email.isEmpty || password.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Preencha todos os campos'),
-                          ),
-                        );
-                        return;
-                      }
-
-                      try {
-                        final response = await Supabase.instance.client.auth
-                            .signInWithPassword(
-                              email: email,
-                              password: password,
-                            );
-
-                        if (response.user != null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Login realizado com sucesso!'),
-                            ),
-                          );
-                          // Aqui você pode navegar para a tela principal do app
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const HomeScreen(),
-                            ),
-                          );
-                        }
-                      } catch (error) {
-                        ScaffoldMessenger.of(
-                          context,
-                        ).showSnackBar(SnackBar(content: Text('Erro: $error')));
-                      }
-                    },
-
+                    onPressed: _isLoading ? null : _handleEmailLogin,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.yellow.shade700,
+                      disabledBackgroundColor: Colors.yellow.shade700.withOpacity(0.5),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                       elevation: 0,
                     ),
-                    child: const Text(
-                      'Iniciar Sessão',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            'Iniciar Sessão',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
                   ),
                 ),
-
                 const SizedBox(height: 16),
 
                 // Botão para criar conta
@@ -270,9 +257,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: double.infinity,
                   height: 56,
                   child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/register');
-                    },
+                    onPressed: () => Navigator.pushNamed(context, '/register'),
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(
                         color: theme.dividerColor.withValues(alpha: 0.4),
@@ -291,7 +276,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 24),
 
                 // Separador "Ou entrar com"
@@ -319,7 +303,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 24),
 
                 // Botões de login social
@@ -328,18 +311,21 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     _buildSocialButton(
                       icon: Icons.g_mobiledata,
-                      onTap: () {},
+                      label: 'Google',
+                      iconColor: Colors.red,
+                      onTap: () => _handleOAuthLogin(OAuthProvider.google),
                       borderColor: theme.dividerColor.withValues(alpha: 0.4),
                     ),
                     const SizedBox(width: 16),
                     _buildSocialButton(
                       icon: Icons.facebook,
-                      onTap: () {},
+                      label: 'Facebook',
+                      iconColor: const Color(0xFF1877F2),
+                      onTap: () => _handleOAuthLogin(OAuthProvider.facebook),
                       borderColor: theme.dividerColor.withValues(alpha: 0.4),
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 40),
               ],
             ),
@@ -366,7 +352,6 @@ class _LoginScreenState extends State<LoginScreen> {
       },
     );
 
-    // Inverte as cores no modo escuro para visibilidade
     if (isDark) {
       logoImage = ColorFiltered(
         colorFilter: const ColorFilter.matrix(<double>[
@@ -393,13 +378,58 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Botão social genérico
+  /// Campo de input reutilizável
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData prefixIcon,
+    required ThemeData theme,
+    TextInputType keyboardType = TextInputType.text,
+    bool obscureText = false,
+    Widget? suffixIcon,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.dividerColor.withValues(alpha: 0.4),
+        ),
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: obscureText,
+        keyboardType: keyboardType,
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(
+            color: theme.hintColor.withValues(alpha: 0.7),
+          ),
+          prefixIcon: Icon(
+            prefixIcon,
+            color: theme.hintColor.withValues(alpha: 0.7),
+          ),
+          suffixIcon: suffixIcon,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Botão social
   Widget _buildSocialButton({
     required IconData icon,
+    required String label,
+    required Color iconColor,
     required VoidCallback onTap,
     required Color borderColor,
   }) {
     return InkWell(
+      borderRadius: BorderRadius.circular(12),
       onTap: onTap,
       child: Container(
         width: 56,
@@ -408,13 +438,7 @@ class _LoginScreenState extends State<LoginScreen> {
           border: Border.all(color: borderColor),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Icon(
-          icon,
-          size: 32,
-          color: icon == Icons.g_mobiledata
-              ? Colors.red
-              : const Color(0xFF1877F2),
-        ),
+        child: Icon(icon, size: 32, color: iconColor),
       ),
     );
   }
