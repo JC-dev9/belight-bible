@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'bible_screen.dart';
 import 'chatbot_screen.dart';
 import 'tabs/home_tab.dart';
 import 'tabs/plans_tab.dart';
 import 'tabs/menu_tab.dart';
 import '../utils/theme.dart';
+import '../main.dart' show HiveKeys;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,17 +17,33 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0; // 0=Home, 1=Bible, 2=Plans, 3=Chatbot, 4=Menu
+  int _currentIndex = 0;
   ReadingTheme _bibleTheme = ReadingTheme.light;
   
-  // Keys
   final GlobalKey<ChatBotScreenState> _chatBotKey = GlobalKey<ChatBotScreenState>();
   final GlobalKey<BibleReaderScreenState> _bibleKey = GlobalKey<BibleReaderScreenState>();
 
-  void _updateBibleTheme(ReadingTheme newTheme) {
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedBibleTheme();
+  }
+
+  void _loadSavedBibleTheme() {
+    final box = Hive.box(HiveKeys.settingsBox);
+    final saved = box.get(HiveKeys.bibleTheme, defaultValue: 'light');
     setState(() {
-      _bibleTheme = newTheme;
+      _bibleTheme = ReadingTheme.values.firstWhere(
+        (t) => t.name == saved,
+        orElse: () => ReadingTheme.light,
+      );
     });
+  }
+
+  void _updateBibleTheme(ReadingTheme newTheme) {
+    setState(() => _bibleTheme = newTheme);
+    // Persistir no Hive
+    Hive.box(HiveKeys.settingsBox).put(HiveKeys.bibleTheme, newTheme.name);
   }
 
   void _switchToChatbot(String prompt) {
