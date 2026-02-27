@@ -1,106 +1,77 @@
 import 'package:flutter/material.dart';
-import '../../data/models/dynamic_models.dart';
 
-/// Card "Continuar Leitura" — design moderno com gradiente e ícone.
+/// Card "Continuar Leitura" — exibe a última posição de leitura do Supabase.
 class ContinueReadingCard extends StatelessWidget {
-  final ReadingProgress? progress;
-  final VoidCallback? onTap;
+  final String book;
+  final int chapter;
+  final VoidCallback onTap;
 
   const ContinueReadingCard({
     super.key,
-    this.progress,
-    this.onTap,
+    required this.book,
+    required this.chapter,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (progress == null) return const SizedBox.shrink();
-
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final txt = theme.textTheme.bodyMedium?.color ?? Colors.black;
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 20),
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-            colors: isDark
-                ? [const Color(0xFF1A2332), const Color(0xFF0F1824)]
-                : [const Color(0xFFF0F4FF), const Color(0xFFE3ECFF)],
-          ),
-          borderRadius: BorderRadius.circular(18),
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.blue.withOpacity(isDark ? 0.05 : 0.08),
-              blurRadius: 16,
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
               offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Row(
           children: [
-            // Ícone do livro
             Container(
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.blue.shade400, Colors.blue.shade600],
-                ),
-                borderRadius: BorderRadius.circular(14),
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(
-                Icons.book_outlined,
-                color: Colors.white,
-                size: 24,
-              ),
+              child: const Icon(Icons.bookmark_border, color: Colors.blue, size: 26),
             ),
-            const SizedBox(width: 14),
-
-            // Informação
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Continuar leitura',
+                    'Continuar Leitura',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.blue.shade300,
+                      color: Theme.of(context).hintColor,
                       fontWeight: FontWeight.w600,
-                      letterSpacing: 0.3,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${progress!.book} ${progress!.chapter}',
-                    style: TextStyle(
+                    '$book $chapter',
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: txt,
                     ),
                   ),
                 ],
               ),
             ),
-
-            // Seta
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
+                shape: BoxShape.circle,
+                color: Theme.of(context).scaffoldBackgroundColor,
               ),
-              child: Icon(
-                Icons.arrow_forward_rounded,
-                color: Colors.blue.shade400,
-                size: 20,
-              ),
+              child: Icon(Icons.arrow_forward, size: 18, color: Theme.of(context).iconTheme.color),
             ),
           ],
         ),
