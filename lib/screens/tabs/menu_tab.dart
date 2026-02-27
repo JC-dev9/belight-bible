@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../profile_screen.dart';
 import '../saved_data_screen.dart';
 import '../connections_screen.dart';
+import '../preferences_screen.dart';
 
 class MenuTab extends StatelessWidget {
   final Function(String, int, int) onNavigateToVerse;
@@ -147,10 +148,13 @@ class MenuTab extends StatelessWidget {
             icon: Icons.settings,
             color: Colors.grey,
             title: 'Preferências',
+            subtitle: 'Tema, aparência e mais',
             onTap: () {
-              // TODO: Implement settings screen
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Configurações em breve')),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PreferencesScreen(),
+                ),
               );
             },
           ),
