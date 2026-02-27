@@ -275,30 +275,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildLogo(bool isDark) {
-    return Container(
+    return Image.asset(
+      'assets/logo.png',
       width: 100,
       height: 100,
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(30),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Image.asset(
-        isDark ? 'lib/assets/logo_dark.png' : 'lib/assets/logo.png',
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            color: Colors.grey.shade100,
-            child: const Icon(
-              Icons.image_not_supported_outlined,
-              size: 40,
-              color: Colors.grey,
-            ),
-          );
-        },
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) => const Icon(
+        Icons.menu_book_outlined,
+        size: 56,
+        color: Colors.amber,
       ),
     );
   }
+
 
   Widget _buildTextField({
     required TextEditingController controller,

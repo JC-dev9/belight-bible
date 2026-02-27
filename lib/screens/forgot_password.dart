@@ -260,44 +260,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Widget _buildLogo(bool isDark) {
-    Widget logoImage = Image.asset(
+    return Image.asset(
       'assets/logo.png',
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        return Container(
-          color: Colors.grey.shade100,
-          child: const Icon(
-            Icons.image_not_supported_outlined,
-            size: 40,
-            color: Colors.grey,
-          ),
-        );
-      },
-    );
-
-    if (isDark) {
-      logoImage = ColorFiltered(
-        colorFilter: const ColorFilter.matrix(<double>[
-          -1, 0, 0, 0, 255,
-          0, -1, 0, 0, 255,
-          0, 0, -1, 0, 255,
-          0, 0, 0, 1, 0,
-        ]),
-        child: logoImage,
-      );
-    }
-
-    return Container(
       width: 100,
       height: 100,
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(30),
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) => const Icon(
+        Icons.menu_book_outlined,
+        size: 56,
+        color: Colors.amber,
       ),
-      clipBehavior: Clip.antiAlias,
-      child: logoImage,
     );
   }
+
 
   Widget _buildTextField({
     required TextEditingController controller,

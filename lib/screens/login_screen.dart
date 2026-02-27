@@ -335,45 +335,19 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Logo adaptado para tema
+  // Logo da aplicação (PNG com fundo transparente)
   Widget _buildLogo(bool isDark) {
-    Widget logoImage = Image.asset(
-      'assets/logo.png',
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        return Container(
-          color: Colors.grey.shade100,
-          child: const Icon(
-            Icons.image_not_supported_outlined,
-            size: 40,
-            color: Colors.grey,
-          ),
-        );
-      },
-    );
-
-    if (isDark) {
-      logoImage = ColorFiltered(
-        colorFilter: const ColorFilter.matrix(<double>[
-          -1, 0, 0, 0, 255,
-          0, -1, 0, 0, 255,
-          0, 0, -1, 0, 255,
-          0, 0, 0, 1, 0,
-        ]),
-        child: logoImage,
-      );
-    }
-
     return Center(
-      child: Container(
+      child: Image.asset(
+        'assets/logo.png',
         width: 110,
         height: 110,
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(30),
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) => const Icon(
+          Icons.menu_book_outlined,
+          size: 64,
+          color: Colors.amber,
         ),
-        clipBehavior: Clip.antiAlias,
-        child: logoImage,
       ),
     );
   }
