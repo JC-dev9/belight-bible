@@ -20,6 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   ReadingTheme _bibleTheme = ReadingTheme.light;
   
+  final GlobalKey<HomeTabState> _homeTabKey = GlobalKey<HomeTabState>();
   final GlobalKey<ChatBotScreenState> _chatBotKey = GlobalKey<ChatBotScreenState>();
   final GlobalKey<BibleReaderScreenState> _bibleKey = GlobalKey<BibleReaderScreenState>();
 
@@ -117,7 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
         index: _currentIndex,
         children: [
           // 0: Home
-          HomeTab(onNavigateToVerse: _navigateToVerse),
+          HomeTab(key: _homeTabKey, onNavigateToVerse: _navigateToVerse),
           
           // 1: Bíblia (gere o proprio tema internamente)
           BibleReaderScreen(
@@ -170,6 +171,10 @@ class _HomeScreenState extends State<HomeScreen> {
               selectedIndex: _currentIndex,
               onDestinationSelected: (index) { 
                 setState(() => _currentIndex = index);
+                // Recarregar dados do Home ao voltar
+                if (index == 0) {
+                  _homeTabKey.currentState?.refreshData();
+                }
               },
               height: 70,
               elevation: 0,
