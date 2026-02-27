@@ -28,14 +28,12 @@ class _PlansTabState extends State<PlansTab> {
     if (!mounted) return;
     setState(() => _isLoading = true);
     try {
-      final results = await Future.wait([
-        _service.getReadingPlans(),
-        _service.getUserReadingPlans(),
-      ]);
+      final allPlans = await _service.getReadingPlans();
+      final userPlans = await _service.getUserPlans();
       if (mounted) {
         setState(() {
-          _allPlans = results[0] as List<ReadingPlan>;
-          _userPlans = results[1] as List<UserReadingPlan>;
+          _allPlans = allPlans;
+          _userPlans = userPlans;
           _isLoading = false;
         });
       }

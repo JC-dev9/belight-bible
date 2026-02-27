@@ -46,7 +46,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
     try {
       await _service.enrollInPlan(widget.plan.id);
       // Recarregar dados do plano do utilizador
-      final plans = await _service.getUserReadingPlans();
+      final plans = await _service.getUserPlans();
       final updated = plans.firstWhere(
         (p) => p.planId == widget.plan.id,
         orElse: () => UserReadingPlan(
@@ -74,9 +74,14 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
     if (_userPlan == null) return;
     setState(() => _isLoading = true);
     try {
-      await _service.advancePlanDay(_userPlan!.id, widget.plan.totalDays);
-      // Recarregar
-      final plans = await _service.getUserReadingPlans();
+      final nextDay = _currentDay + 1;
+      final isCompleted = nextDay >= widget.plan.totalDays;
+      await _service.updatePlanProgress(
+        _userPlan!.id,
+        nextDay,
+        completed: isCompleted,
+      );
+      final plans = await _service.getUserPlans();
       final updated = plans.firstWhere(
         (p) => p.planId == widget.plan.id,
         orElse: () => _userPlan!,
