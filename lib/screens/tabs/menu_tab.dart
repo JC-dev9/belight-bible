@@ -3,16 +3,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../profile_screen.dart';
 import '../saved_data_screen.dart';
 import '../connections_screen.dart';
-import '../../utils/theme.dart'; // Import ReadingTheme
 
 class MenuTab extends StatelessWidget {
-  final ReadingTheme currentTheme;
   final Function(String, int, int) onNavigateToVerse;
   final VoidCallback onDataChanged;
 
   const MenuTab({
     super.key,
-    required this.currentTheme,
     required this.onNavigateToVerse,
     required this.onDataChanged,
   });
@@ -21,10 +18,6 @@ class MenuTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = Supabase.instance.client.auth.currentUser;
     final theme = Theme.of(context);
-
-    // Get the SavedDataScreenState via global key if needed, or just push normally.
-    // Since we are pushing, we might need to pass keys if interaction is required, 
-    // but standard navigation is usually preferred for sub-screens in this 'Menu' context.
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -118,14 +111,8 @@ class MenuTab extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (context) => SavedDataScreen(
-                    currentTheme: currentTheme,
                     onNavigateToVerse: (book, chapter, verse) {
-                      Navigator.pop(context); // Pop SavedDataScreen
-                      // Note: We might need to pop MenuTab if it was a push? 
-                      // No, MenuTab is a tab, but we pushed SavedScreen on top of it.
-                      // So Navigator.pop(context) removes SavedDataScreen.
-                      // The user is back at MenuTab.
-                      // Then we call onNavigateToVerse to switch tabs.
+                      Navigator.pop(context);
                       onNavigateToVerse(book, chapter, verse); 
                     },
                     onDataChanged: onDataChanged,

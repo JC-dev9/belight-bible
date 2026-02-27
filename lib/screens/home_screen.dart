@@ -138,7 +138,6 @@ class _HomeScreenState extends State<HomeScreen> {
           
           // 4: Menu (Mais)
           MenuTab(
-            currentTheme: _bibleTheme,
             onNavigateToVerse: _navigateToVerse,
             onDataChanged: () {
                _bibleKey.currentState?.refreshData();
