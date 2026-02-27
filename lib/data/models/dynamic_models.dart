@@ -146,6 +146,8 @@ class ReadingPlan {
   final int totalDays;
   final String color;
   final String icon;
+  final String? goal;
+  final List<Map<String, dynamic>> passages;
 
   ReadingPlan({
     required this.id,
@@ -154,9 +156,18 @@ class ReadingPlan {
     required this.totalDays,
     this.color = '#2196F3',
     this.icon = 'calendar_today',
+    this.goal,
+    this.passages = const [],
   });
 
   factory ReadingPlan.fromJson(Map<String, dynamic> json) {
+    List<Map<String, dynamic>> parsedPassages = [];
+    if (json['passages'] != null && json['passages'] is List) {
+      parsedPassages = List<Map<String, dynamic>>.from(
+        (json['passages'] as List).map((e) => Map<String, dynamic>.from(e)),
+      );
+    }
+
     return ReadingPlan(
       id: json['id'],
       title: json['title'],
@@ -164,7 +175,18 @@ class ReadingPlan {
       totalDays: json['total_days'],
       color: json['color'] ?? '#2196F3',
       icon: json['icon'] ?? 'calendar_today',
+      goal: json['goal'],
+      passages: parsedPassages,
     );
+  }
+
+  /// Retorna a passagem para um dia específico
+  String? getPassageForDay(int day) {
+    final entry = passages.firstWhere(
+      (p) => p['day'] == day,
+      orElse: () => {},
+    );
+    return entry.isNotEmpty ? entry['passage'] as String? : null;
   }
 }
 
