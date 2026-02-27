@@ -340,8 +340,8 @@ class _LoginScreenState extends State<LoginScreen> {
     return Center(
       child: Image.asset(
         'assets/logo.png',
-        width: 110,
-        height: 110,
+        width: 140,
+        height: 140,
         fit: BoxFit.contain,
         errorBuilder: (context, error, stackTrace) => const Icon(
           Icons.menu_book_outlined,

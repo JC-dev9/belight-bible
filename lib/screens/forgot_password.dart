@@ -262,8 +262,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Widget _buildLogo(bool isDark) {
     return Image.asset(
       'assets/logo.png',
-      width: 100,
-      height: 100,
+      width: 130,
+      height: 130,
       fit: BoxFit.contain,
       errorBuilder: (context, error, stackTrace) => const Icon(
         Icons.menu_book_outlined,
