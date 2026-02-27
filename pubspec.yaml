@@ -26,6 +26,8 @@ dependencies:
   flutter_riverpod: ^2.6.1
   equatable: ^2.0.5
   flutter_dotenv: ^6.0.0
+  shared_preferences: ^2.2.2
+  url_launcher: ^6.2.5
 
 dev_dependencies:
   flutter_test:
@@ -36,6 +38,7 @@ flutter:
   uses-material-design: true
 
   assets:
+    - assets/logo.png
     - assets/bible/acf.json
     - assets/bible/arc.json
     - assets/bible/ntlh.json

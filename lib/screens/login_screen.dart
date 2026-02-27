@@ -351,6 +351,34 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // Logo adaptado para tema
   Widget _buildLogo(bool isDark) {
+    Widget logoImage = Image.asset(
+      'assets/logo.png',
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          color: Colors.grey.shade100,
+          child: const Icon(
+            Icons.image_not_supported_outlined,
+            size: 40,
+            color: Colors.grey,
+          ),
+        );
+      },
+    );
+
+    // Inverte as cores no modo escuro para visibilidade
+    if (isDark) {
+      logoImage = ColorFiltered(
+        colorFilter: const ColorFilter.matrix(<double>[
+          -1, 0, 0, 0, 255,
+          0, -1, 0, 0, 255,
+          0, 0, -1, 0, 255,
+          0, 0, 0, 1, 0,
+        ]),
+        child: logoImage,
+      );
+    }
+
     return Center(
       child: Container(
         width: 110,
@@ -360,20 +388,7 @@ class _LoginScreenState extends State<LoginScreen> {
           borderRadius: BorderRadius.circular(30),
         ),
         clipBehavior: Clip.antiAlias,
-        child: Image.asset(
-          isDark ? 'lib/assets/logo_dark.png' : 'lib/assets/logo.png',
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return Container(
-              color: Colors.grey.shade100,
-              child: const Icon(
-                Icons.image_not_supported_outlined,
-                size: 40,
-                color: Colors.grey,
-              ),
-            );
-          },
-        ),
+        child: logoImage,
       ),
     );
   }
