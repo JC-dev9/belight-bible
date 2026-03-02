@@ -51,7 +51,6 @@ class _LoginScreenState extends State<LoginScreen> {
         final settingsBox = Hive.box(HiveKeys.settingsBox);
         await settingsBox.put(HiveKeys.rememberMe, _rememberMe);
 
-        _showSnackBar('Login realizado com sucesso!');
         if (mounted) {
           Navigator.pushReplacementNamed(context, '/home');
         }

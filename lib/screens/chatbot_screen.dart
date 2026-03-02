@@ -1,9 +1,8 @@
-import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/supabase_service.dart';
 
 class ChatBotScreen extends StatefulWidget {
@@ -407,139 +406,72 @@ class ChatBotScreenState extends State<ChatBotScreen> {
   }
 
   // =========================================================================
-  // SYSTEM PROMPT
-  // =========================================================================
-  static const _systemPrompt = """
-Você é um especialista em Bíblia, teologia cristã e princípios do cristianismo.
-Todas as suas respostas devem ser baseadas nas Escrituras Sagradas, na fé cristã e em valores bíblicos.
-Responda sempre em Português de Portugal.
-
-IMPORTANTE: 
-Sempre que citar um versículo, formate-o EXATAMENTE como um link Markdown da seguinte forma:
-[Livro Capítulo:Versículo](bible://Livro/Capítulo/Versículo)
-
-Exemplos:
-- [João 3:16](bible://João/3/16)
-- [Gênesis 1:1](bible://Gênesis/1/1)
-
-Não use abreviações nos links. O nome do livro deve estar completo.
-""";
-
-  // =========================================================================
-  // FALLBACK: Groq → Gemini
+  // BIBLE LINK FORMATTER
   // =========================================================================
 
-  Future<void> _sendWithFallback(String pergunta, _ChatMessage botMessage) async {
-    final groqSuccess = await _sendToGroq(pergunta, botMessage);
-    if (groqSuccess) return;
+  String _formatBibleLinks(String text) {
+    final regex = RegExp(r'(?:\[([^\]]*)\])?\(?(bible:\/\/([^\/\)]+)\/(\d+)\/([0-9\-]+))\)?');
+    return text.replaceAllMapped(regex, (match) {
+      final existingTitle = match.group(1);
+      String book = match.group(3)!;
+      final chapter = match.group(4)!;
+      final verse = match.group(5)!;
 
-    debugPrint('⚠️ Groq falhou. Tentando Gemini como fallback...');
-    final geminiSuccess = await _sendToGemini(pergunta, botMessage);
-    if (geminiSuccess) return;
+      try {
+        if (book.contains('%')) {
+          book = Uri.decodeComponent(book);
+        }
+      } catch (_) {}
 
-    setState(() {
-      botMessage.text = 'Desculpe, não consegui conectar ao serviço. Tente novamente em alguns instantes.';
+      book = book.trim();
+
+      final title = (existingTitle != null && existingTitle.isNotEmpty)
+          ? existingTitle
+          : '$book $chapter:$verse';
+
+      return '[$title](bible://${Uri.encodeComponent(book)}/$chapter/$verse)';
     });
   }
 
   // =========================================================================
-  // GROQ
+  // SEND TO EDGE FUNCTION
   // =========================================================================
 
-  List<Map<String, String>> _buildGroqMessages(_ChatMessage botMessage) {
-    final messages = <Map<String, String>>[];
-    messages.add({"role": "system", "content": _systemPrompt});
-
-    final mensagensValidas = _messages.where((m) => m != botMessage).toList();
-    final historicoRecente = mensagensValidas.length > 3
-        ? mensagensValidas.sublist(mensagensValidas.length - 3)
-        : mensagensValidas;
-
-    for (var msg in historicoRecente) {
-      messages.add({"role": msg.isUser ? "user" : "assistant", "content": msg.text});
-    }
-    return messages;
-  }
-
-  Future<bool> _sendToGroq(String pergunta, _ChatMessage botMessage) async {
-    final apiKey = dotenv.env['GROQ_API_KEY'] ?? '';
-    if (apiKey.isEmpty) return false;
-
-    final url = Uri.parse("https://api.groq.com/openai/v1/chat/completions");
-
+  Future<void> _sendWithFallback(String pergunta, _ChatMessage botMessage) async {
     try {
-      final response = await http.post(
-        url,
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer $apiKey",
-        },
-        body: jsonEncode({
-          "model": "meta-llama/llama-4-scout-17b-16e-instruct",
-          "messages": _buildGroqMessages(botMessage),
-          "stream": false,
-        }),
+      final client = Supabase.instance.client;
+
+      // Build message history for the Edge Function
+      final mensagensValidas = _messages.where((m) => m != botMessage).toList();
+      final historicoRecente = mensagensValidas.length > 6
+          ? mensagensValidas.sublist(mensagensValidas.length - 6)
+          : mensagensValidas;
+
+      final messages = historicoRecente.map((m) => {
+        'role': m.isUser ? 'user' : 'assistant',
+        'content': m.text,
+      }).toList();
+
+      final response = await client.functions.invoke(
+        'chat',
+        body: {'messages': messages},
       );
 
-      if (response.statusCode == 200) {
-        final jsonResp = jsonDecode(utf8.decode(response.bodyBytes));
-        final text = jsonResp['choices']?[0]?['message']?['content'] ?? '';
-        setState(() { botMessage.text = text; });
+      final data = response.data;
+      if (data != null && data['response'] != null) {
+        setState(() {
+          botMessage.text = _formatBibleLinks(data['response'] as String);
+        });
         _scrollToBottom();
-        return true;
+      } else {
+        setState(() {
+          botMessage.text = 'Desculpe, não consegui conectar ao serviço. Tente novamente em alguns instantes.';
+        });
       }
-      return false;
     } catch (e) {
-      debugPrint('Groq erro: $e');
-      return false;
-    }
-  }
-
-  // =========================================================================
-  // GEMINI
-  // =========================================================================
-
-  Future<bool> _sendToGemini(String pergunta, _ChatMessage botMessage) async {
-    final apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
-    if (apiKey.isEmpty) return false;
-
-    final contents = <Map<String, dynamic>>[];
-    final mensagensValidas = _messages.where((m) => m != botMessage).toList();
-    final historicoRecente = mensagensValidas.length > 3
-        ? mensagensValidas.sublist(mensagensValidas.length - 3)
-        : mensagensValidas;
-
-    for (var msg in historicoRecente) {
-      contents.add({
-        "role": msg.isUser ? "user" : "model",
-        "parts": [{"text": msg.text}]
+      setState(() {
+        botMessage.text = 'Desculpe, não consegui conectar ao serviço. Tente novamente em alguns instantes.';
       });
-    }
-
-    final url = Uri.parse(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$apiKey");
-
-    try {
-      final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "system_instruction": {"parts": [{"text": _systemPrompt}]},
-          "contents": contents,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final jsonResp = jsonDecode(utf8.decode(response.bodyBytes));
-        final text = jsonResp['candidates']?[0]?['content']?['parts']?[0]?['text'] ?? '';
-        setState(() { botMessage.text = text; });
-        _scrollToBottom();
-        return true;
-      }
-      return false;
-    } catch (e) {
-      debugPrint('Gemini erro: $e');
-      return false;
     }
   }
 
