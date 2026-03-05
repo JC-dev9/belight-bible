@@ -20,36 +20,31 @@ class HomeHeader extends StatelessWidget {
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Olá,',
-              style: TextStyle(
-                fontSize: 16,
-                color: Theme.of(context).hintColor,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-            Text(
-              capitalizedName,
-              style: const TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.5,
-              ),
-            ),
-          ],
+        Text(
+          'Olá, $capitalizedName',
+          style: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
+            color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.9),
+            letterSpacing: -0.5,
+          ),
         ),
         
         // Streak Counter (dinâmico)
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: AppTheme.accentGold.withOpacity(0.15),
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? const Color(0xFF332D20)
+                : const Color(0xFFFFF7DF),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppTheme.accentGold.withOpacity(0.3)),
+            border: Border.all(
+              color: Theme.of(context).brightness == Brightness.dark 
+                  ? const Color(0xFF5A4416)
+                  : const Color(0xFFFFE082),
+            ),
           ),
           child: Row(
             children: [

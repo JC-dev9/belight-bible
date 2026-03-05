@@ -67,7 +67,7 @@ class _HomeTabState extends State<HomeTab> {
                   slivers: [
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(20.0, 60.0, 20.0, 20.0),
+                        padding: const EdgeInsets.fromLTRB(20.0, 16.0, 20.0, 20.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [

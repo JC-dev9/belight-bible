@@ -106,8 +106,9 @@ class DailyVerseCard extends StatelessWidget {
                   '"$text"',
                   style: TextStyle(
                     color: Theme.of(context).textTheme.bodyLarge?.color,
-                    fontSize: 18, 
-                    fontWeight: FontWeight.w600,
+                    fontSize: 20, 
+                    fontWeight: FontWeight.w500,
+                    fontStyle: FontStyle.italic,
                     height: 1.5,
                     fontFamily: 'Serif', 
                   ),
@@ -118,10 +119,10 @@ class DailyVerseCard extends StatelessWidget {
                 Align(
                   alignment: Alignment.centerRight,
                   child: Text(
-                    ref,
+                    '- $ref',
                     style: TextStyle(
-                      color: Theme.of(context).hintColor,
-                      fontSize: 14,
+                      color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7) ?? Colors.grey.shade600,
+                      fontSize: 15,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
