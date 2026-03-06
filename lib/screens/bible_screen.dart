@@ -429,18 +429,33 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
   // ===========================================================================
 
   void _showDisplaySettings() {
+    // Cópias locais para o modal — evita depender do rebuild do pai (que é um overlay separado)
+    double localFontSize = _fontSize;
+    ReadingTheme localTheme = widget.currentTheme;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        // Usar StatefulBuilder se quisermos redesenhar apenas o modal em mudanças internas,
-        // mas como passamos callbacks que chamam setState no pai, o pai reconstrói.
-        // Reconstruir o pai reconstrói o modal. Isto está ok.
-        return BibleSettingsSheet(
-          currentTheme: widget.currentTheme,
-          fontSize: _fontSize,
-          onFontSizeChanged: (val) => setState(() => _fontSize = val),
-          onThemeChanged: (theme) => widget.onThemeChanged(theme),
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return BibleSettingsSheet(
+              currentTheme: localTheme,
+              fontSize: localFontSize,
+              onFontSizeChanged: (val) {
+                // Atualiza o modal em tempo real
+                setModalState(() => localFontSize = val);
+                // Atualiza o leitor por trás
+                setState(() => _fontSize = val);
+              },
+              onThemeChanged: (theme) {
+                // Atualiza o modal em tempo real
+                setModalState(() => localTheme = theme);
+                // Atualiza o leitor por trás
+                widget.onThemeChanged(theme);
+              },
+            );
+          },
         );
       },
     );

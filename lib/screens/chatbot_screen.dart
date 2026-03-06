@@ -101,10 +101,12 @@ class ChatBotScreenState extends State<ChatBotScreen> {
           Text(
             'Olá, $greetName',
             style: TextStyle(
-              fontSize: 28,
+              fontSize: MediaQuery.of(context).size.width < 360 ? 22 : 28,
               fontWeight: FontWeight.bold,
               color: theme.textTheme.bodyLarge?.color,
             ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
           const SizedBox(height: 6),
           Text(

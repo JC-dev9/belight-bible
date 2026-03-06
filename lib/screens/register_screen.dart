@@ -43,10 +43,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 500),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
               Center(child: _buildLogo(isDark)),
               const SizedBox(height: 20),
 
@@ -269,16 +273,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 40),
             ],
           ),
+            ),
+          ),
+          ),
         ),
       ),
     );
   }
 
   Widget _buildLogo(bool isDark) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final logoSize = (screenWidth * 0.3).clamp(80.0, 130.0);
     return Image.asset(
       'assets/logo.png',
-      width: 130,
-      height: 130,
+      width: logoSize,
+      height: logoSize,
       fit: BoxFit.contain,
       errorBuilder: (context, error, stackTrace) => const Icon(
         Icons.menu_book_outlined,

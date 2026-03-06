@@ -88,7 +88,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: _isLoading 
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              child: Column(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 500),
+                  child: Column(
                 children: [
                   const SizedBox(height: 20),
                   // Avatar
@@ -179,6 +182,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 32),
                 ],
+              ),
+            ),
               ),
             ),
     );

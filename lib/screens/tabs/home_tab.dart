@@ -66,51 +66,56 @@ class _HomeTabState extends State<HomeTab> {
                   ),
                   slivers: [
                     SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(20.0, 16.0, 20.0, 20.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // 1. Header (Nome + Streak dinâmico)
-                            HomeHeader(
-                              displayName: _profile?.fullName ?? 'Visitante',
-                              streak: _readingProgress?.currentStreak ?? 0,
-                            ),
-                            const SizedBox(height: 24),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 600),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(20.0, 16.0, 20.0, 20.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // 1. Header (Nome + Streak dinâmico)
+                                HomeHeader(
+                                  displayName: _profile?.fullName ?? 'Visitante',
+                                  streak: _readingProgress?.currentStreak ?? 0,
+                                ),
+                                const SizedBox(height: 24),
 
-                            // 2. Versículo do Dia (dinâmico)
-                            DailyVerseCard(
-                              verseText: _dailyVerse?.text,
-                              reference: _dailyVerse?.reference,
-                            ),
-                            const SizedBox(height: 24),
+                                // 2. Versículo do Dia (dinâmico)
+                                DailyVerseCard(
+                                  verseText: _dailyVerse?.text,
+                                  reference: _dailyVerse?.reference,
+                                ),
+                                const SizedBox(height: 24),
 
-                            // 3. Continuar Leitura (dinâmico)
-                            ContinueReadingCard(
-                              book: _readingProgress?.book ?? 'Gênesis',
-                              chapter: _readingProgress?.chapter ?? 1,
-                              onTap: () {
-                                if (widget.onNavigateToVerse != null) {
-                                  widget.onNavigateToVerse!(
-                                    _readingProgress?.book ?? 'Gênesis',
-                                    _readingProgress?.chapter ?? 1,
-                                    _readingProgress?.verse ?? 1,
-                                  );
-                                }
-                              },
-                            ),
-                            const SizedBox(height: 24),
+                                // 3. Continuar Leitura (dinâmico)
+                                ContinueReadingCard(
+                                  book: _readingProgress?.book ?? 'Gênesis',
+                                  chapter: _readingProgress?.chapter ?? 1,
+                                  onTap: () {
+                                    if (widget.onNavigateToVerse != null) {
+                                      widget.onNavigateToVerse!(
+                                        _readingProgress?.book ?? 'Gênesis',
+                                        _readingProgress?.chapter ?? 1,
+                                        _readingProgress?.verse ?? 1,
+                                      );
+                                    }
+                                  },
+                                ),
+                                const SizedBox(height: 24),
 
-                            // 4. Devocional Diário (dinâmico)
-                            DailyDevotionalCard(
-                              title: _devotional?.title,
-                              content: _devotional?.content,
-                              readingTimeMin: _devotional?.readingTimeMin ?? 3,
-                              publishDate: _devotional?.publishDate,
-                              devotionalId: _devotional?.id,
+                                // 4. Devocional Diário (dinâmico)
+                                DailyDevotionalCard(
+                                  title: _devotional?.title,
+                                  content: _devotional?.content,
+                                  readingTimeMin: _devotional?.readingTimeMin ?? 3,
+                                  publishDate: _devotional?.publishDate,
+                                  devotionalId: _devotional?.id,
+                                ),
+                                const SizedBox(height: 80),
+                              ],
                             ),
-                            const SizedBox(height: 80),
-                          ],
+                          ),
                         ),
                       ),
                     ),

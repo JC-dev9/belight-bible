@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../utils/theme.dart';
 
 /// Header da Home — exibe nome dinâmico e streak real do Supabase.
 class HomeHeader extends StatelessWidget {
@@ -22,15 +21,20 @@ class HomeHeader extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(
-          'Olá, $capitalizedName',
-          style: TextStyle(
-            fontSize: 26,
-            fontWeight: FontWeight.w800,
-            color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.9),
-            letterSpacing: -0.5,
+        Flexible(
+          child: Text(
+            'Olá, $capitalizedName',
+            style: TextStyle(
+              fontSize: MediaQuery.of(context).size.width < 360 ? 20 : 26,
+              fontWeight: FontWeight.w800,
+              color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.9),
+              letterSpacing: -0.5,
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
         ),
+        const SizedBox(width: 12),
         
         // Streak Counter (dinâmico)
         Container(
