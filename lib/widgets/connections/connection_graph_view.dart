@@ -145,13 +145,15 @@ class _ConnectionGraphViewState extends ConsumerState<ConnectionGraphView> {
           final isDimmed =
               state.selectedNodeId != null && !isSelected && !isConnected;
 
-          return NodeWidget(
-            node: bibleNode,
-            isSelected: isSelected,
-            isConnected: isConnected,
-            isFavorite: isFavorite,
-            isDimmed: isDimmed,
-            onTap: () => _onNodeTap(nodeId),
+          return RepaintBoundary(
+            child: NodeWidget(
+              node: bibleNode,
+              isSelected: isSelected,
+              isConnected: isConnected,
+              isFavorite: isFavorite,
+              isDimmed: isDimmed,
+              onTap: () => _onNodeTap(nodeId),
+            ),
           );
         },
       ),
