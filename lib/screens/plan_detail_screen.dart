@@ -29,6 +29,9 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
   // Passagens marcadas como lidas para o dia selecionado (localmente no UI)
   final Set<String> _checkedPassages = {};
 
+  // Sinaliza ao PlansTab que os dados mudaram e precisam de ser recarregados.
+  bool _dataChanged = false;
+
   @override
   void initState() {
     super.initState();
@@ -122,6 +125,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
           id: '', userId: '', planId: widget.plan.id, startedAt: DateTime.now(),
         ),
       );
+      _dataChanged = true;
       setState(() {
         _userPlan = updated;
         _selectedDay = _computeTodayDay();
@@ -156,6 +160,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
         (p) => p.planId == widget.plan.id,
         orElse: () => _userPlan!,
       );
+      _dataChanged = true;
       setState(() {
         _userPlan = updated;
         _checkedPassages.clear();
@@ -190,7 +195,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
       setState(() => _isLoading = true);
       try {
         await _service.leavePlan(_userPlan!.id);
-        if (mounted) Navigator.pop(context);
+        if (mounted) Navigator.pop(context, true);
       } catch (e) {
         setState(() => _isLoading = false);
         if (mounted) {
@@ -240,7 +245,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
             scrolledUnderElevation: 0,
             leading: IconButton(
               icon: Icon(Icons.arrow_back, color: txt),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(context, _dataChanged),
             ),
             title: Text(
               widget.plan.title,

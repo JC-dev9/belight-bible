@@ -52,13 +52,13 @@ class _PlansTabState extends State<PlansTab> {
 
   void _openPlanDetail(ReadingPlan plan) async {
     final userPlan = _getUserPlan(plan.id);
-    await Navigator.push(
+    final changed = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder: (_) => PlanDetailScreen(plan: plan, userPlan: userPlan),
       ),
     );
-    _loadPlans(); // Recarregar ao voltar
+    if (changed == true) _loadPlans();
   }
 
   @override
