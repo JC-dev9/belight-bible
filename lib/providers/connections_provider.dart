@@ -25,7 +25,7 @@ class ConnectionsState {
   final bool isLoading;
   final String? errorMessage;
 
-  const ConnectionsState({
+  ConnectionsState({
     required this.allNodes,
     required this.allConnections,
     required this.availablePeriods,
@@ -39,26 +39,20 @@ class ConnectionsState {
 
   /// Estado inicial com listas vazias
   factory ConnectionsState.initial() {
-    return const ConnectionsState(
-      allNodes: [],
-      allConnections: [],
-      availablePeriods: [],
+    return ConnectionsState(
+      allNodes: const [],
+      allConnections: const [],
+      availablePeriods: const [],
       isLoading: true,
     );
   }
 
-  /// Retorna nós filtrados (removendo tipos e períodos ocultos)
-  List<BibleNode> get filteredNodes {
-    return allNodes.where((node) {
-      // Filtrar por tipo
-      if (hiddenNodeTypes.contains(node.type)) return false;
-      
-      // Filtrar por período
-      if (node.period != null && hiddenPeriods.contains(node.period)) return false;
-      
-      return true;
-    }).toList();
-  }
+  /// Nós filtrados por tipo e período — calculado uma vez por instância de estado.
+  late final List<BibleNode> filteredNodes = allNodes.where((node) {
+    if (hiddenNodeTypes.contains(node.type)) return false;
+    if (node.period != null && hiddenPeriods.contains(node.period)) return false;
+    return true;
+  }).toList();
 
   /// Retorna as conexões que devem ser destacadas (do nó selecionado)
   List<NodeConnection> get highlightedConnections {
