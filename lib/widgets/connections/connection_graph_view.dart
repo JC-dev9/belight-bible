@@ -11,19 +11,23 @@ class ConnectionGraphView extends ConsumerStatefulWidget {
   const ConnectionGraphView({super.key});
 
   @override
-  ConsumerState<ConnectionGraphView> createState() => _ConnectionGraphViewState();
+  ConsumerState<ConnectionGraphView> createState() =>
+      _ConnectionGraphViewState();
 }
 
 class _ConnectionGraphViewState extends ConsumerState<ConnectionGraphView> {
   final Graph graph = Graph();
   late SugiyamaConfiguration builder;
-  final TransformationController _transformationController = TransformationController();
+  final TransformationController _transformationController =
+      TransformationController();
+
+  // Rastreia o que foi usado para construir o grafo — evita reconstrução em mudanças de seleção
+  Set<String> _builtNodeIds = {};
+  int _builtConnectionCount = -1;
 
   @override
   void initState() {
     super.initState();
-    
-    // Configuração do algoritmo de layout
     builder = SugiyamaConfiguration()
       ..nodeSeparation = 80
       ..levelSeparation = 100
@@ -41,7 +45,6 @@ class _ConnectionGraphViewState extends ConsumerState<ConnectionGraphView> {
     graph.nodes.clear();
     graph.edges.clear();
 
-    // Criar nós apenas para os filtrados
     final nodeMap = <String, Node>{};
     for (final bibleNode in state.filteredNodes) {
       final node = Node.Id(bibleNode.id);
@@ -49,22 +52,22 @@ class _ConnectionGraphViewState extends ConsumerState<ConnectionGraphView> {
       graph.addNode(node);
     }
 
-    // Criar arestas entre nós filtrados
     for (final connection in state.allConnections) {
       final sourceNode = nodeMap[connection.sourceId];
       final targetNode = nodeMap[connection.targetId];
-      
-      // Só adiciona a aresta se ambos os nós estão visíveis
       if (sourceNode != null && targetNode != null) {
         graph.addEdge(sourceNode, targetNode);
       }
     }
+
+    _builtNodeIds = state.filteredNodes.map((n) => n.id).toSet();
+    _builtConnectionCount = state.allConnections.length;
   }
 
   void _onNodeTap(String nodeId) {
     final notifier = ref.read(connectionsProvider.notifier);
     notifier.selectNode(nodeId);
-    
+
     // Abrir bottom sheet com detalhes
     showModalBottomSheet(
       context: context,
@@ -77,9 +80,25 @@ class _ConnectionGraphViewState extends ConsumerState<ConnectionGraphView> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(connectionsProvider);
-    
-    // Rebuild o grafo quando os nós filtrados mudarem
-    _buildGraph();
+
+    // Reconstrói o grafo somente quando nós ou conexões mudam (não em mudanças de seleção/UI)
+    ref.listen(connectionsProvider, (previous, next) {
+      final currentNodeIds = next.filteredNodes.map((n) => n.id).toSet();
+      final nodesChanged =
+          !_builtNodeIds.containsAll(currentNodeIds) ||
+          !currentNodeIds.containsAll(_builtNodeIds);
+      final connectionsChanged =
+          next.allConnections.length != _builtConnectionCount;
+
+      if (nodesChanged || connectionsChanged) {
+        setState(() => _buildGraph());
+      }
+    });
+
+    // Build inicial
+    if (_builtNodeIds.isEmpty && state.filteredNodes.isNotEmpty) {
+      _buildGraph();
+    }
 
     if (state.filteredNodes.isEmpty) {
       return const Center(
@@ -118,14 +137,13 @@ class _ConnectionGraphViewState extends ConsumerState<ConnectionGraphView> {
         builder: (Node node) {
           final nodeId = node.key!.value as String;
           final bibleNode = state.allNodes.firstWhere((n) => n.id == nodeId);
-          
+
           // Determinar estado visual do nó
           final isSelected = state.selectedNodeId == nodeId;
           final isConnected = state.connectedNodeIds.contains(nodeId);
           final isFavorite = state.favoriteNodeIds.contains(nodeId);
-          final isDimmed = state.selectedNodeId != null && 
-                          !isSelected && 
-                          !isConnected;
+          final isDimmed =
+              state.selectedNodeId != null && !isSelected && !isConnected;
 
           return NodeWidget(
             node: bibleNode,
