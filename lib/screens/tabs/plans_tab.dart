@@ -74,82 +74,122 @@ class _PlansTabState extends State<PlansTab> {
 
     // Separar planos inscritos e disponíveis
     final enrolledPlanIds = _userPlans.map((p) => p.planId).toSet();
-    final enrolledPlans = _allPlans.where((p) => enrolledPlanIds.contains(p.id)).toList();
-    final availablePlans = _allPlans.where((p) => !enrolledPlanIds.contains(p.id)).toList();
+    final enrolledPlans = _allPlans
+        .where((p) => enrolledPlanIds.contains(p.id))
+        .toList();
+    final availablePlans = _allPlans
+        .where((p) => !enrolledPlanIds.contains(p.id))
+        .toList();
 
     return RefreshIndicator(
       color: Colors.amber,
       onRefresh: _loadPlans,
-      child: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
+      child: CustomScrollView(
+        slivers: [
           // Header
-          Text(
-            'Planos de Leitura',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: txt,
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Planos de Leitura',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: txt,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Organize a sua leitura bíblica com planos guiados',
+                    style: TextStyle(fontSize: 14, color: txt.withOpacity(0.5)),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            'Organize a sua leitura bíblica com planos guiados',
-            style: TextStyle(
-              fontSize: 14,
-              color: txt.withOpacity(0.5),
-            ),
-          ),
-          const SizedBox(height: 24),
 
           // Meus Planos
           if (enrolledPlans.isNotEmpty) ...[
-            Text(
-              'MEUS PLANOS',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-                color: txt.withOpacity(0.4),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                child: Text(
+                  'MEUS PLANOS',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                    color: txt.withOpacity(0.4),
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: 12),
-            ...enrolledPlans.map((plan) {
-              final userPlan = _getUserPlan(plan.id);
-              return _buildEnrolledPlanCard(plan, userPlan!, txt);
-            }),
-            const SizedBox(height: 24),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              sliver: SliverList.builder(
+                itemCount: enrolledPlans.length,
+                itemBuilder: (_, i) {
+                  final plan = enrolledPlans[i];
+                  final userPlan = _getUserPlan(plan.id)!;
+                  return _buildEnrolledPlanCard(plan, userPlan, txt);
+                },
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
 
-          // Planos Disponíveis
-          Text(
-            enrolledPlans.isEmpty ? 'PLANOS DISPONÍVEIS' : 'EXPLORAR',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
-              color: txt.withOpacity(0.4),
+          // Header de Planos Disponíveis
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: Text(
+                enrolledPlans.isEmpty ? 'PLANOS DISPONÍVEIS' : 'EXPLORAR',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                  color: txt.withOpacity(0.4),
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 12),
+
+          // Lista de planos disponíveis (lazy) ou mensagem vazia
           if (availablePlans.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Text(
-                  'Você está inscrito em todos os planos! 🎉',
-                  style: TextStyle(color: txt.withOpacity(0.5)),
+            SliverToBoxAdapter(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Text(
+                    'Você está inscrito em todos os planos! 🎉',
+                    style: TextStyle(color: txt.withOpacity(0.5)),
+                  ),
                 ),
               ),
             )
           else
-            ...availablePlans.map((plan) => _buildAvailablePlanCard(plan, txt)),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              sliver: SliverList.builder(
+                itemCount: availablePlans.length,
+                itemBuilder: (_, i) =>
+                    _buildAvailablePlanCard(availablePlans[i], txt),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildEnrolledPlanCard(ReadingPlan plan, UserReadingPlan userPlan, Color txt) {
+  Widget _buildEnrolledPlanCard(
+    ReadingPlan plan,
+    UserReadingPlan userPlan,
+    Color txt,
+  ) {
     final color = _parseColor(plan.color);
     final progress = userPlan.progress;
     final isCompleted = userPlan.completedAt != null;
@@ -178,11 +218,7 @@ class _PlansTabState extends State<PlansTab> {
                     color: color.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
-                    _getIconData(plan.icon),
-                    color: color,
-                    size: 22,
-                  ),
+                  child: Icon(_getIconData(plan.icon), color: color, size: 22),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -204,13 +240,19 @@ class _PlansTabState extends State<PlansTab> {
                             : 'Dia ${userPlan.currentDay} de ${plan.totalDays}',
                         style: TextStyle(
                           fontSize: 13,
-                          color: isCompleted ? Colors.green : txt.withOpacity(0.5),
+                          color: isCompleted
+                              ? Colors.green
+                              : txt.withOpacity(0.5),
                         ),
                       ),
                     ],
                   ),
                 ),
-                Icon(Icons.arrow_forward_ios, size: 14, color: txt.withOpacity(0.3)),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 14,
+                  color: txt.withOpacity(0.3),
+                ),
               ],
             ),
 
@@ -277,11 +319,7 @@ class _PlansTabState extends State<PlansTab> {
                 color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                _getIconData(plan.icon),
-                color: color,
-                size: 22,
-              ),
+              child: Icon(_getIconData(plan.icon), color: color, size: 22),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -301,10 +339,7 @@ class _PlansTabState extends State<PlansTab> {
                     '${plan.totalDays} dias • ${plan.description}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: txt.withOpacity(0.5),
-                    ),
+                    style: TextStyle(fontSize: 12, color: txt.withOpacity(0.5)),
                   ),
                 ],
               ),
@@ -342,12 +377,18 @@ class _PlansTabState extends State<PlansTab> {
 
   IconData _getIconData(String iconName) {
     switch (iconName) {
-      case 'calendar_today': return Icons.calendar_today_outlined;
-      case 'favorite': return Icons.favorite_outline;
-      case 'local_library': return Icons.local_library_outlined;
-      case 'auto_stories': return Icons.auto_stories_outlined;
-      case 'mail': return Icons.mail_outline;
-      default: return Icons.menu_book_outlined;
+      case 'calendar_today':
+        return Icons.calendar_today_outlined;
+      case 'favorite':
+        return Icons.favorite_outline;
+      case 'local_library':
+        return Icons.local_library_outlined;
+      case 'auto_stories':
+        return Icons.auto_stories_outlined;
+      case 'mail':
+        return Icons.mail_outline;
+      default:
+        return Icons.menu_book_outlined;
     }
   }
 }
