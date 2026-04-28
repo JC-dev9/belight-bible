@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -20,11 +22,13 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _rememberMe = true;
   bool _obscurePassword = true;
   bool _isLoading = false;
+  StreamSubscription<AuthState>? _oauthSubscription;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _oauthSubscription?.cancel();
     super.dispose();
   }
 
@@ -74,10 +78,8 @@ class _LoginScreenState extends State<LoginScreen> {
         redirectTo: 'io.supabase.belightapp://login-callback/',
       );
 
-      // O OAuth redireciona o utilizador — a sessão é restaurada ao voltar.
-      // O listener no Supabase cuida da navegação.
-      // Para web, escutamos as mudanças de auth state:
-      Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      _oauthSubscription?.cancel();
+      _oauthSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
         if (data.event == AuthChangeEvent.signedIn && mounted) {
           final settingsBox = Hive.box(HiveKeys.settingsBox);
           settingsBox.put(HiveKeys.rememberMe, _rememberMe);
