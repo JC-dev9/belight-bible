@@ -226,8 +226,26 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
       if (note != null) {
         verse['note'] = note.content;
         verse['note_title'] = note.title;
+        verse['note_preview'] = _parseNotePreview(note.content);
       }
     }
+  }
+
+  static String _parseNotePreview(String content) {
+    if (content.isEmpty) return '';
+    try {
+      if (content.trim().startsWith('[') || content.trim().startsWith('{')) {
+        final dynamic json = jsonDecode(content);
+        if (json is List) {
+          final buffer = StringBuffer();
+          for (var op in json) {
+            if (op is Map && op['insert'] is String) buffer.write(op['insert']);
+          }
+          return buffer.toString().trim().replaceAll(RegExp(r'\n+'), ' ');
+        }
+      }
+    } catch (_) {}
+    return content;
   }
 
   // ===========================================================================

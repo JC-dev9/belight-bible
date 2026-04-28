@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../../utils/theme.dart';
@@ -41,28 +40,6 @@ class VerseList extends StatelessWidget {
     required this.onVerseLongPress,
     required this.onNoteTap,
   });
-
-  String _getPreviewText(String content) {
-    if (content.isEmpty) return '';
-    try {
-      // Check if it looks like JSON
-      if (content.trim().startsWith('[') || content.trim().startsWith('{')) {
-        final dynamic json = jsonDecode(content);
-        if (json is List) {
-          final buffer = StringBuffer();
-          for (var op in json) {
-            if (op is Map && op['insert'] is String) {
-              buffer.write(op['insert']);
-            }
-          }
-          return buffer.toString().trim().replaceAll(RegExp(r'\n+'), ' ');
-        }
-      }
-      return content;
-    } catch (e) {
-      return content;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -198,7 +175,7 @@ class VerseList extends StatelessWidget {
                               child: GestureDetector(
                                 onTap: () => onNoteTap(index),
                                 child: Text(
-                                  _getPreviewText(verse['note'].toString()),
+                                  verse['note_preview'] as String? ?? '',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
