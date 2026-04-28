@@ -133,6 +133,8 @@ class ChatBotScreenState extends State<ChatBotScreen> {
     );
   }
 
+  static const _chipRadius = BorderRadius.all(Radius.circular(14));
+
   Widget _buildSuggestionChip(ThemeData theme, String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -141,12 +143,12 @@ class ChatBotScreenState extends State<ChatBotScreen> {
           _controller.text = text;
           _sendMessage();
         },
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: _chipRadius,
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: _chipRadius,
             border: Border.all(color: theme.dividerColor.withValues(alpha: 0.2)),
             color: theme.cardColor,
           ),
@@ -175,27 +177,30 @@ class ChatBotScreenState extends State<ChatBotScreen> {
   Widget _buildMessageRow(ThemeData theme, _ChatMessage msg, int index) {
     // Typing indicator
     if (!msg.isUser && msg.text.isEmpty && _isSending) {
-      return Align(
-        alignment: Alignment.centerLeft,
-        child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 4),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: theme.cardColor,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(12),
-              topRight: Radius.circular(12),
-              bottomRight: Radius.circular(12),
+      return RepaintBoundary(
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: theme.cardColor,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+                bottomRight: Radius.circular(12),
+              ),
             ),
+            child: const _TypingIndicator(),
           ),
-          child: const _TypingIndicator(),
         ),
       );
     }
 
     final iconColor = theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.3) ?? Colors.grey;
 
-    return Column(
+    return RepaintBoundary(
+      child: Column(
       crossAxisAlignment: msg.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
         // Balão da mensagem
@@ -271,6 +276,7 @@ class ChatBotScreenState extends State<ChatBotScreen> {
             ),
           ),
       ],
+      ),
     );
   }
 
