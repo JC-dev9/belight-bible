@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 
@@ -32,25 +33,26 @@ class NoteEditorToolbar extends StatefulWidget {
 }
 
 class _NoteEditorToolbarState extends State<NoteEditorToolbar> {
-  // Use a local state for rebuilds of icons that rely on selection
-  // QuillController notifies listeners, but we might need to listen to it
-  // to update the "active" state of buttons.
+  Timer? _debounce;
 
   @override
   void initState() {
     super.initState();
-    // Listen to controller changes to update button states (bold, H1, etc.)
     widget.controller.addListener(_onSelectionChanged);
   }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     widget.controller.removeListener(_onSelectionChanged);
     super.dispose();
   }
 
   void _onSelectionChanged() {
-    if (mounted) setState(() {});
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 80), () {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
