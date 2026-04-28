@@ -19,6 +19,14 @@ class HomeTab extends StatefulWidget {
 class _HomeTabState extends State<HomeTab> {
   final SupabaseService _service = SupabaseService();
 
+  // Cache estático — partilhado entre instâncias, válido por 5 minutos.
+  static ReadingProgress? _cachedProgress;
+  static DailyVerse? _cachedVerse;
+  static Devotional? _cachedDevotional;
+  static UserProfile? _cachedProfile;
+  static DateTime? _cacheTime;
+  static const _cacheTtl = Duration(minutes: 5);
+
   // Estado dinâmico
   ReadingProgress? _readingProgress;
   DailyVerse? _dailyVerse;
@@ -32,7 +40,23 @@ class _HomeTabState extends State<HomeTab> {
     _loadData();
   }
 
-  Future<void> _loadData() async {
+  Future<void> _loadData({bool forceRefresh = false}) async {
+    final cacheValid = _cacheTime != null &&
+        DateTime.now().difference(_cacheTime!) < _cacheTtl;
+
+    if (!forceRefresh && cacheValid) {
+      if (mounted) {
+        setState(() {
+          _readingProgress = _cachedProgress;
+          _dailyVerse = _cachedVerse;
+          _devotional = _cachedDevotional;
+          _profile = _cachedProfile;
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
     final results = await Future.wait([
       _service.getReadingProgress(),
       _service.getDailyVerse(),
@@ -40,12 +64,18 @@ class _HomeTabState extends State<HomeTab> {
       _service.getProfile(),
     ]);
 
+    _cachedProgress = results[0] as ReadingProgress?;
+    _cachedVerse = results[1] as DailyVerse?;
+    _cachedDevotional = results[2] as Devotional?;
+    _cachedProfile = results[3] as UserProfile?;
+    _cacheTime = DateTime.now();
+
     if (mounted) {
       setState(() {
-        _readingProgress = results[0] as ReadingProgress?;
-        _dailyVerse = results[1] as DailyVerse?;
-        _devotional = results[2] as Devotional?;
-        _profile = results[3] as UserProfile?;
+        _readingProgress = _cachedProgress;
+        _dailyVerse = _cachedVerse;
+        _devotional = _cachedDevotional;
+        _profile = _cachedProfile;
         _isLoading = false;
       });
     }
@@ -59,7 +89,7 @@ class _HomeTabState extends State<HomeTab> {
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : RefreshIndicator(
-                onRefresh: _loadData,
+                onRefresh: () => _loadData(forceRefresh: true),
                 child: CustomScrollView(
                   physics: const BouncingScrollPhysics(
                     parent: AlwaysScrollableScrollPhysics(),
