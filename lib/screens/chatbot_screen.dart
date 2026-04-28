@@ -26,7 +26,7 @@ class ChatBotScreenState extends State<ChatBotScreen> {
 
   static const _suggestions = [
     '🙏 O que a Bíblia diz sobre ansiedade?',
-    '📖 Explique o Salmo 23',
+    '📖 Explique o Salmos 23',
     '💡 Como ter mais fé no dia a dia?',
     '❤️ Versículos sobre amor',
   ];
