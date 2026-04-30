@@ -17,30 +17,25 @@ abstract class ConnectionsRepository {
   Future<List<String>> getAvailablePeriods();
 }
 
-/// Implementação mocada do repositório usando dados locais
-class MockConnectionsRepository implements ConnectionsRepository {
+/// Repositório local com dados bíblicos embarcados na app
+class LocalConnectionsRepository implements ConnectionsRepository {
   @override
   Future<List<BibleNode>> getNodes() async {
-    // Simula delay de rede
-    await Future.delayed(const Duration(milliseconds: 300));
     return BiblicalConnectionsMock.getAllNodes();
   }
 
   @override
   Future<List<NodeConnection>> getConnections() async {
-    await Future.delayed(const Duration(milliseconds: 300));
     return BiblicalConnectionsMock.getAllConnections();
   }
 
   @override
   Future<List<NodeConnection>> getConnectionsForNode(String nodeId) async {
-    await Future.delayed(const Duration(milliseconds: 100));
     return BiblicalConnectionsMock.getConnectionsForNode(nodeId);
   }
 
   @override
   Future<List<String>> getAvailablePeriods() async {
-    await Future.delayed(const Duration(milliseconds: 100));
     return BiblicalConnectionsMock.getAvailablePeriods();
   }
 }

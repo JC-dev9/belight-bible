@@ -6,7 +6,7 @@ import '../../data/repositories/connections_repository.dart';
 
 /// Provider para o repositório de conexões
 final connectionsRepositoryProvider = Provider<ConnectionsRepository>((ref) {
-  return MockConnectionsRepository();
+  return LocalConnectionsRepository();
 });
 
 /// Estado imutável do grafo de conexões
