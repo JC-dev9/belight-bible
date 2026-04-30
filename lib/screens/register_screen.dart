@@ -16,6 +16,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -24,6 +25,84 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleRegister() async {
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+
+    void showError(String msg) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(msg),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+
+    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+      showError('Preencha todos os campos.');
+      return;
+    }
+    if (password != confirmPassword) {
+      showError('As palavras-passe não coincidem.');
+      return;
+    }
+    if (password.length < 6) {
+      showError('A palavra-passe deve ter pelo menos 6 caracteres.');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final res = await Supabase.instance.client.auth.signUp(
+        email: email,
+        password: password,
+        data: {'name': name},
+      );
+
+      if (!mounted) return;
+
+      if (res.user != null) {
+        await showDialog<void>(
+          context: context,
+          builder: (_) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: const Text(
+              'Conta criada!',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            content: const Text(
+              'Verifique o seu e-mail para confirmar o cadastro antes de fazer login.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                },
+                child: const Text(
+                  'OK',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+    } on AuthException catch (e) {
+      if (mounted) showError(e.message);
+    } catch (_) {
+      if (mounted) showError('Ocorreu um erro inesperado. Tente novamente.');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -143,107 +222,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () async {
-                    final name = _nameController.text.trim();
-                    final email = _emailController.text.trim();
-                    final password = _passwordController.text.trim();
-                    final confirmPassword = _confirmPasswordController.text
-                        .trim();
-
-                    if (password != confirmPassword) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('As palavras-passe não coincidem.'),
-                        ),
-                      );
-                      return;
-                    }
-
-                    if (password.length < 6) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'A palavra-passe deve ter pelo menos 6 caracteres.',
-                          ),
-                        ),
-                      );
-                      return;
-                    }
-
-                    try {
-                      final supabase = Supabase.instance.client;
-                      final AuthResponse res = await supabase.auth.signUp(
-                        email: email,
-                        password: password,
-                        data: {'name': name},
-                      );
-
-                      final user = res.user;
-
-                      if (user != null) {
-                        // Mostra o Dialog de sucesso
-                        await showDialog(
-                          context: context,
-                          builder: (context) {
-                            return AlertDialog(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              title: const Text(
-                                'Conta criada com sucesso!',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              content: const Text(
-                                'Verifique o seu e-mail para confirmar o cadastro antes de fazer login.',
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.pop(context); // Fecha o dialog
-                                    Navigator.pop(
-                                      context,
-                                    ); // Volta para a tela de login
-                                  },
-                                  child: const Text(
-                                    'OK',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.blue,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                      }
-                    } on AuthException catch (e) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text(e.message)));
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Ocorreu um erro inesperado.'),
-                        ),
-                      );
-                    }
-                  },
+                  onPressed: _isLoading ? null : _handleRegister,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.yellow.shade700,
+                    disabledBackgroundColor:
+                        Colors.yellow.shade700.withOpacity(0.5),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Criar Conta',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'Criar Conta',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
               ),
 
