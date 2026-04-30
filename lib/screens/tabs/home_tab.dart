@@ -33,6 +33,7 @@ class _HomeTabState extends State<HomeTab> {
   Devotional? _devotional;
   UserProfile? _profile;
   bool _isLoading = true;
+  bool _hasError = false;
 
   @override
   void initState() {
@@ -57,27 +58,37 @@ class _HomeTabState extends State<HomeTab> {
       return;
     }
 
-    final results = await Future.wait([
-      _service.getReadingProgress(),
-      _service.getDailyVerse(),
-      _service.getTodayDevotional(),
-      _service.getProfile(),
-    ]);
+    try {
+      final results = await Future.wait([
+        _service.getReadingProgress(),
+        _service.getDailyVerse(),
+        _service.getTodayDevotional(),
+        _service.getProfile(),
+      ]);
 
-    _cachedProgress = results[0] as ReadingProgress?;
-    _cachedVerse = results[1] as DailyVerse?;
-    _cachedDevotional = results[2] as Devotional?;
-    _cachedProfile = results[3] as UserProfile?;
-    _cacheTime = DateTime.now();
+      _cachedProgress = results[0] as ReadingProgress?;
+      _cachedVerse = results[1] as DailyVerse?;
+      _cachedDevotional = results[2] as Devotional?;
+      _cachedProfile = results[3] as UserProfile?;
+      _cacheTime = DateTime.now();
 
-    if (mounted) {
-      setState(() {
-        _readingProgress = _cachedProgress;
-        _dailyVerse = _cachedVerse;
-        _devotional = _cachedDevotional;
-        _profile = _cachedProfile;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _readingProgress = _cachedProgress;
+          _dailyVerse = _cachedVerse;
+          _devotional = _cachedDevotional;
+          _profile = _cachedProfile;
+          _isLoading = false;
+          _hasError = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+        });
+      }
     }
   }
 
@@ -88,7 +99,9 @@ class _HomeTabState extends State<HomeTab> {
       body: SafeArea(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : RefreshIndicator(
+            : _hasError && _dailyVerse == null
+                ? _buildErrorWidget()
+                : RefreshIndicator(
                 onRefresh: () => _loadData(forceRefresh: true),
                 child: CustomScrollView(
                   physics: const BouncingScrollPhysics(
@@ -152,6 +165,37 @@ class _HomeTabState extends State<HomeTab> {
                   ],
                 ),
               ),
+      ),
+    );
+  }
+
+  Widget _buildErrorWidget() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.wifi_off_rounded, size: 52, color: Colors.grey),
+            const SizedBox(height: 16),
+            const Text(
+              'Sem ligação',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Não foi possível carregar os dados.\nVerifique a sua ligação à internet.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: () => _loadData(forceRefresh: true),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Tentar novamente'),
+            ),
+          ],
+        ),
       ),
     );
   }
