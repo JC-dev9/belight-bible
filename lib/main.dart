@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+import 'config/app_env.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/forgot_password.dart';
@@ -31,13 +31,13 @@ Future<void> main() async {
   await Hive.openBox('bibleBox');
   await Hive.openBox(HiveKeys.settingsBox);
 
-  // Carregar variáveis de ambiente
-  await dotenv.load(fileName: ".env");
+  // Valida configuração em modo debug
+  AppEnv.assertConfigured();
 
   // Inicializa Supabase
   await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+    url: AppEnv.supabaseUrl,
+    anonKey: AppEnv.supabaseAnonKey,
   );
 
   // Carregar ThemeMode persistido
