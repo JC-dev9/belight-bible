@@ -10,6 +10,7 @@ import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/forgot_password.dart';
 import 'screens/home_screen.dart';
+import 'screens/onboarding_screen.dart';
 
 /// Notificador global de tema para a aplicação.
 /// Permite mudar o ThemeMode (light, dark, system) de qualquer lugar.
@@ -21,6 +22,7 @@ class HiveKeys {
   static const String rememberMe = 'rememberMe';
   static const String themeMode = 'themeMode';
   static const String bibleTheme = 'bibleTheme';
+  static const String onboardingCompleted = 'onboardingCompleted';
 }
 
 Future<void> main() async {
@@ -73,6 +75,14 @@ class MyApp extends StatelessWidget {
     // Verifica se existe uma sessão ativa
     final hasSession = Supabase.instance.client.auth.currentSession != null;
 
+    // Onboarding visto?
+    final settingsBox = Hive.box(HiveKeys.settingsBox);
+    final onboardingDone =
+        settingsBox.get(HiveKeys.onboardingCompleted, defaultValue: false) == true;
+    final initialRoute = !onboardingDone
+        ? '/onboarding'
+        : (hasSession ? '/home' : '/');
+
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: appThemeNotifier,
       builder: (context, themeMode, _) {
@@ -112,12 +122,13 @@ class MyApp extends StatelessWidget {
             ),
           ),
           themeMode: themeMode,
-          initialRoute: hasSession ? '/home' : '/',
+          initialRoute: initialRoute,
           routes: {
             '/': (context) => const LoginScreen(),
             '/home': (context) => const HomeScreen(),
             '/register': (context) => const RegisterScreen(),
             '/forgot-password': (context) => const ForgotPasswordScreen(),
+            '/onboarding': (context) => const OnboardingScreen(),
           },
         );
       },
