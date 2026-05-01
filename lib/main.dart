@@ -11,6 +11,7 @@ import 'screens/register_screen.dart';
 import 'screens/forgot_password.dart';
 import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
+import 'services/notification_service.dart';
 
 /// Notificador global de tema para a aplicação.
 /// Permite mudar o ThemeMode (light, dark, system) de qualquer lugar.
@@ -23,6 +24,9 @@ class HiveKeys {
   static const String themeMode = 'themeMode';
   static const String bibleTheme = 'bibleTheme';
   static const String onboardingCompleted = 'onboardingCompleted';
+  static const String dailyVerseEnabled = 'dailyVerseEnabled';
+  static const String dailyVerseHour = 'dailyVerseHour';
+  static const String dailyVerseMinute = 'dailyVerseMinute';
 }
 
 Future<void> main() async {
@@ -51,6 +55,18 @@ Future<void> main() async {
   final rememberMe = settingsBox.get(HiveKeys.rememberMe, defaultValue: true);
   if (rememberMe == false) {
     await Supabase.instance.client.auth.signOut();
+  }
+
+  // Re-agendar a notificação diária se o utilizador a tem activa.
+  await NotificationService.instance.init();
+  final dailyEnabled =
+      settingsBox.get(HiveKeys.dailyVerseEnabled, defaultValue: false) == true;
+  if (dailyEnabled) {
+    final hour = settingsBox.get(HiveKeys.dailyVerseHour, defaultValue: 8) as int;
+    final minute =
+        settingsBox.get(HiveKeys.dailyVerseMinute, defaultValue: 0) as int;
+    await NotificationService.instance
+        .scheduleDailyVerse(hour: hour, minute: minute);
   }
 
   runApp(const ProviderScope(child: MyApp()));
