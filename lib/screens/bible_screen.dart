@@ -19,6 +19,8 @@ import '../widgets/bible/bible_navigation_modals.dart';
 
 import 'chatbot_screen.dart';
 import 'note_editor_screen.dart';
+import 'bible_search_screen.dart';
+import '../data/bible_search_service.dart';
 
 /// Tela responsável por exibir o texto da Bíblia, lidar com navegação,
 /// destaques, notas e interações do utilizador.
@@ -486,6 +488,21 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
   // Modais e Diálogos
   // ===========================================================================
 
+  Future<void> _openSearch() async {
+    final result = await Navigator.push<BibleSearchResult>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BibleSearchScreen(
+          version: _bibleRepository.version,
+          currentTheme: widget.currentTheme,
+        ),
+      ),
+    );
+    if (result != null) {
+      jumpToVerse(result.book, result.chapter, result.verse);
+    }
+  }
+
   void _showDisplaySettings() {
     // Cópias locais para o modal — evita depender do rebuild do pai (que é um overlay separado)
     double localFontSize = _fontSize;
@@ -716,6 +733,7 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
                 },
               ),
               onSettingsTap: _showDisplaySettings,
+              onSearchTap: _openSearch,
             ),
 
             Expanded(

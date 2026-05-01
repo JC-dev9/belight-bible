@@ -9,6 +9,7 @@ class BibleHeader extends StatelessWidget {
   final VoidCallback onVersionTap;
   final VoidCallback onBookTap;
   final VoidCallback onSettingsTap;
+  final VoidCallback? onSearchTap;
 
   const BibleHeader({
     super.key,
@@ -20,6 +21,7 @@ class BibleHeader extends StatelessWidget {
     required this.onVersionTap,
     required this.onBookTap,
     required this.onSettingsTap,
+    this.onSearchTap,
   });
 
   @override
@@ -69,11 +71,22 @@ class BibleHeader extends StatelessWidget {
             ),
           ),
 
-          // Definições
-          IconButton(
-            icon: Icon(Icons.text_format, color: textColor),
-            onPressed: onSettingsTap,
-            tooltip: 'Ajustar texto',
+          // Acções: Pesquisa + Definições
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (onSearchTap != null)
+                IconButton(
+                  icon: Icon(Icons.search, color: textColor),
+                  onPressed: onSearchTap,
+                  tooltip: 'Pesquisar',
+                ),
+              IconButton(
+                icon: Icon(Icons.text_format, color: textColor),
+                onPressed: onSettingsTap,
+                tooltip: 'Ajustar texto',
+              ),
+            ],
           ),
         ],
       ),
