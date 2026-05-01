@@ -26,7 +26,6 @@ class _BibleSearchScreenState extends State<BibleSearchScreen> {
 
   Timer? _debounce;
   bool _loading = true;
-  bool _searching = false;
   String _query = '';
   List<BibleSearchResult> _results = const [];
 
@@ -57,15 +56,11 @@ class _BibleSearchScreenState extends State<BibleSearchScreen> {
   }
 
   void _runSearch(String value) {
-    setState(() {
-      _query = value;
-      _searching = true;
-    });
     final results = BibleSearchService.search(value);
     if (!mounted) return;
     setState(() {
+      _query = value;
       _results = results;
-      _searching = false;
     });
   }
 
@@ -149,9 +144,6 @@ class _BibleSearchScreenState extends State<BibleSearchScreen> {
     }
     if (_query.trim().length < 2) {
       return _buildEmptyHint(textColor);
-    }
-    if (_searching && _results.isEmpty) {
-      return Center(child: CircularProgressIndicator(color: accent));
     }
     if (_results.isEmpty) {
       return Center(
