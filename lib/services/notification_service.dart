@@ -71,26 +71,50 @@ class NotificationService {
   }
 
   /// Agenda (ou re-agenda) a notificação diária do versículo do dia.
-  Future<void> scheduleDailyVerse({required int hour, required int minute}) async {
+  ///
+  /// [verseText] e [verseReference] são opcionais — quando fornecidos, o corpo
+  /// da notificação mostra o texto real (com `BigTextStyle` no Android para o
+  /// utilizador ver o versículo completo sem abrir a app). Caso contrário, é
+  /// usada uma mensagem genérica de chamada.
+  Future<void> scheduleDailyVerse({
+    required int hour,
+    required int minute,
+    String? verseText,
+    String? verseReference,
+  }) async {
     await init();
     await cancelDailyVerse();
 
     final scheduled = _nextInstanceOf(hour, minute);
 
-    const androidDetails = AndroidNotificationDetails(
+    final hasVerse = verseText != null && verseText.trim().isNotEmpty;
+    final title = hasVerse && verseReference != null && verseReference.isNotEmpty
+        ? 'Versículo do Dia • $verseReference'
+        : 'Versículo do Dia';
+    final body = hasVerse
+        ? verseText.trim()
+        : 'Comece o seu dia com a Palavra. Toque para abrir.';
+
+    final androidDetails = AndroidNotificationDetails(
       _channelId,
       _channelName,
       channelDescription: _channelDescription,
       importance: Importance.high,
       priority: Priority.high,
+      styleInformation: hasVerse
+          ? BigTextStyleInformation(
+              body,
+              contentTitle: title,
+            )
+          : null,
     );
     const iosDetails = DarwinNotificationDetails();
-    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+    final details = NotificationDetails(android: androidDetails, iOS: iosDetails);
 
     await _plugin.zonedSchedule(
       _dailyVerseId,
-      'Versículo do Dia',
-      'Comece o seu dia com a Palavra. Toque para abrir.',
+      title,
+      body,
       scheduled,
       details,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
