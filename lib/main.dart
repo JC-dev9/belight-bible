@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -57,16 +59,17 @@ Future<void> main() async {
     await Supabase.instance.client.auth.signOut();
   }
 
-  // Re-agendar a notificação diária se o utilizador a tem activa.
-  await NotificationService.instance.init();
+  // Re-agendar a notificação diária, se activa, sem bloquear o cold start.
+  // O init() do NotificationService corre lazy dentro de scheduleDailyVerse,
+  // evitando carregar timezone (~700KB) para quem não usa notificações.
   final dailyEnabled =
       settingsBox.get(HiveKeys.dailyVerseEnabled, defaultValue: false) == true;
   if (dailyEnabled) {
     final hour = settingsBox.get(HiveKeys.dailyVerseHour, defaultValue: 8) as int;
     final minute =
         settingsBox.get(HiveKeys.dailyVerseMinute, defaultValue: 0) as int;
-    await NotificationService.instance
-        .scheduleDailyVerse(hour: hour, minute: minute);
+    unawaited(NotificationService.instance
+        .scheduleDailyVerse(hour: hour, minute: minute));
   }
 
   runApp(const ProviderScope(child: MyApp()));
