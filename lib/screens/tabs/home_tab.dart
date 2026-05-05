@@ -1,6 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../../data/supabase_service.dart';
 import '../../data/models/dynamic_models.dart';
+import '../../main.dart' show HiveKeys;
+import '../../services/notification_service.dart';
 import '../../widgets/home/home_header.dart';
 import '../../widgets/home/daily_verse_card.dart';
 import '../../widgets/home/continue_reading_card.dart';
@@ -71,6 +76,25 @@ class _HomeTabState extends State<HomeTab> {
       _cachedDevotional = results[2] as Devotional?;
       _cachedProfile = results[3] as UserProfile?;
       _cacheTime = DateTime.now();
+
+      // Actualiza a notificação diária com o texto real, se activa.
+      final verse = _cachedVerse;
+      if (verse != null) {
+        final box = Hive.box(HiveKeys.settingsBox);
+        final enabled =
+            box.get(HiveKeys.dailyVerseEnabled, defaultValue: false) == true;
+        if (enabled) {
+          final hour = box.get(HiveKeys.dailyVerseHour, defaultValue: 8) as int;
+          final minute =
+              box.get(HiveKeys.dailyVerseMinute, defaultValue: 0) as int;
+          unawaited(NotificationService.instance.scheduleDailyVerse(
+            hour: hour,
+            minute: minute,
+            verseText: verse.text,
+            verseReference: verse.reference,
+          ));
+        }
+      }
 
       if (mounted) {
         setState(() {
