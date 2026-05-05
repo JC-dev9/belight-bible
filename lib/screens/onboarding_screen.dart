@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../main.dart' show HiveKeys;
 import '../utils/theme.dart';
@@ -59,7 +60,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _finish() async {
     await Hive.box(HiveKeys.settingsBox).put(HiveKeys.onboardingCompleted, true);
     if (!mounted) return;
-    Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+    final hasSession =
+        Supabase.instance.client.auth.currentSession != null;
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      hasSession ? '/home' : '/',
+      (route) => false,
+    );
   }
 
   void _next() {
