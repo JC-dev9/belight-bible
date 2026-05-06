@@ -6,6 +6,7 @@ import 'local_bible_loader.dart';
 class BibleRepository {
   String version;
   List<dynamic>? _cachedBible;
+  String? _loadedVersion;
 
   BibleRepository({required this.version});
 
@@ -49,10 +50,27 @@ class BibleRepository {
     }
   }
 
-  /// Carrega a Bíblia localmente
+  /// Carrega a Bíblia localmente. Não recarrega se a versão actual já está em memória.
   Future<void> ensureLoaded() async {
-    _cachedBible = await LocalBibleLoader.load(version);
+    if (_cachedBible != null && _loadedVersion == version) return;
+    final data = await LocalBibleLoader.load(version);
+    _cachedBible = data;
+    _loadedVersion = version;
   }
+
+  /// Indica se a versão está pronta em memória (lookup síncrono).
+  bool get isReady =>
+      _cachedBible != null &&
+      _loadedVersion == version &&
+      LocalBibleLoader.isCached(version);
+
+  /// Pré-aquece uma versão em background — próxima troca para ela é instantânea.
+  static void prefetchVersion(String verCode) =>
+      LocalBibleLoader.prefetch(verCode);
+
+  /// Indica se a versão está pronta em memória (lookup síncrono, estático).
+  static bool isVersionCached(String verCode) =>
+      LocalBibleLoader.isCached(verCode);
 
   /// Remove permanentemente uma versão do disco.
   /// Apaga ambas as variantes (minúsculas e maiúsculas) para garantir limpeza total.
@@ -65,6 +83,7 @@ class BibleRepository {
       final file = File('${dir.path}/$name.json');
       if (file.existsSync()) await file.delete();
     }
+    LocalBibleLoader.evict(verCode);
   }
 
   /// Lista de versões baixadas localmente
