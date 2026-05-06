@@ -13,12 +13,16 @@ class BibleRepository {
   static const Set<String> _bundledVersions = {'acf', 'arc', 'ntlh'};
 
   // Todas as versões disponíveis: bundle + download
+  // Códigos correspondem aos ficheiros em: damarals/biblias (inst/json/)
   static const Map<String, String> availableVersions = {
     'ACF': 'Almeida Corrigida Fiel',
     'ARC': 'Almeida Revista e Corrigida',
     'NTLH': 'Nova Tradução na Linguagem de Hoje',
-    'KJV': 'King James Version',
-    'NIV': 'New International Version',
+    'NAA': 'Nova Almeida Atualizada',
+    'KJA': 'King James Atualizada',
+    'KJF': 'King James Fiel 2000',
+    'NVI': 'Nova Versão Internacional',
+    'NVT': 'Nova Versão Transformadora',
   };
 
   /// Versões incluídas no app (sem necessidade de download)
