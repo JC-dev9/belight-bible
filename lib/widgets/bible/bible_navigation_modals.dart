@@ -194,6 +194,14 @@ class _VersionSelectorSheetState extends State<_VersionSelectorSheet> {
       }
       _isLoading = false;
     });
+
+    // Pré-aquece em background as versões instaladas que ainda não estão em
+    // memória. Quando o utilizador toca numa, a troca passa a ser instantânea.
+    for (final entry in _installed.entries) {
+      if (entry.value && entry.key != widget.currentVersion) {
+        BibleRepository.prefetchVersion(entry.key);
+      }
+    }
   }
 
   Future<void> _startDownload(String code) async {
