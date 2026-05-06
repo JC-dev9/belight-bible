@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import '../widgets/note_editor/note_editor_toolbar.dart';
 import '../widgets/note_editor/verse_context_card.dart';
+import '../services/note_export_service.dart';
+import '../data/user_data_model.dart';
 
 class NoteEditorScreen extends StatefulWidget {
   final String book;
@@ -107,6 +109,20 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     });
   }
 
+  Future<void> _shareNote() async {
+    final content = jsonEncode(_controller.document.toDelta().toJson());
+    final note = UserNote(
+      book: widget.book,
+      chapter: widget.chapter,
+      verse: widget.verseNumber,
+      content: content,
+      title: _titleController.text.trim().isEmpty
+          ? null
+          : _titleController.text.trim(),
+    );
+    await NoteExportService.exportNote(note);
+  }
+
   @override
   Widget build(BuildContext context) {
     final backgroundColor = _customBackgroundColor ?? widget.backgroundColor;
@@ -128,6 +144,11 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
+          IconButton(
+            icon: Icon(Icons.ios_share_rounded, color: effectiveTextColor, size: 20),
+            tooltip: 'Partilhar nota',
+            onPressed: _shareNote,
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: TextButton(

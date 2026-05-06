@@ -1,11 +1,10 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../data/user_data_model.dart';
 import '../data/models/dynamic_models.dart';
 import '../data/supabase_service.dart';
 import '../data/bible_repository.dart';
+import '../services/note_export_service.dart';
 import 'note_editor_screen.dart';
 import 'devotional_reader_screen.dart';
 
@@ -235,6 +234,22 @@ class SavedDataScreenState extends State<SavedDataScreen>
         backgroundColor: bg,
         elevation: 0,
         centerTitle: false,
+        actions: [
+          // Botão só visível na tab de Anotações
+          AnimatedBuilder(
+            animation: _tabController,
+            builder: (context, _) {
+              if (_tabController.index != 1 || _notes.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              return IconButton(
+                icon: const Icon(Icons.ios_share_rounded),
+                tooltip: 'Exportar todas as anotações',
+                onPressed: () => NoteExportService.exportAllNotes(_notes),
+              );
+            },
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           labelColor: _accentColor,
@@ -402,6 +417,20 @@ class SavedDataScreenState extends State<SavedDataScreen>
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      // Botão de partilhar nota individual
+                      InkWell(
+                        onTap: () => NoteExportService.exportNote(note),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.ios_share_rounded,
+                            size: 16,
+                            color: txt.withOpacity(0.4),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
                       Icon(Icons.arrow_forward_ios,
                           size: 12, color: txt.withOpacity(0.3)),
                     ],
