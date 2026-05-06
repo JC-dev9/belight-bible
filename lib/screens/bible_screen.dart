@@ -51,6 +51,12 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
   List<Map<String, dynamic>> _verses = [];
   bool _isLoading = true;
 
+  // Cache dos dados Supabase do último capítulo carregado, para evitar refetch
+  // ao trocar apenas de versão (texto muda, mas highlights/notas continuam iguais).
+  List<Highlight> _cachedHighlights = const [];
+  List<UserNote> _cachedNotes = const [];
+  String? _cachedDataKey; // "$book::$chapter"
+
   // Estado da UI
   HighlightStyle _selectedHighlightStyle = HighlightStyle.fundoVersiculo;
   double _fontSize = 18.0;
@@ -129,7 +135,9 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
   // ===========================================================================
 
   Future<void> _loadInitialData() async {
-    setState(() => _isLoading = true);
+    if (!_bibleRepository.isReady) {
+      setState(() => _isLoading = true);
+    }
     try {
       await _bibleRepository.ensureLoaded();
       await _loadChapter();
@@ -140,6 +148,58 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
           'Erro ao carregar dados. Verifique a versão.',
           isError: true,
         );
+      }
+    }
+  }
+
+  /// Troca a versão da Bíblia preservando livro/capítulo, scroll e dados do
+  /// utilizador. Se a versão já está em cache, troca instantânea sem rede.
+  Future<void> _changeVersion(String newVersion) async {
+    if (newVersion == _bibleRepository.version) return;
+    _bibleRepository.version = newVersion;
+
+    final wasReady = _bibleRepository.isReady;
+    if (!wasReady) {
+      setState(() => _isLoading = true);
+    }
+
+    try {
+      await _bibleRepository.ensureLoaded();
+      final newVerses = await _bibleRepository.getChapter(
+        _selectedBook,
+        _selectedChapter,
+      );
+
+      // Reutiliza highlights/notas se for o mesmo capítulo já carregado;
+      // só vai à rede se ainda não tivermos cache (1.ª abertura desta sessão).
+      final key = '$_selectedBook::$_selectedChapter';
+      List<Highlight> highlights = _cachedHighlights;
+      List<UserNote> notes = _cachedNotes;
+      if (_cachedDataKey != key) {
+        final results = await Future.wait([
+          _supabaseService.getHighlights(_selectedBook, _selectedChapter),
+          _supabaseService.getNotes(_selectedBook, _selectedChapter),
+        ]);
+        highlights = results[0] as List<Highlight>;
+        notes = results[1] as List<UserNote>;
+        _cachedHighlights = highlights;
+        _cachedNotes = notes;
+        _cachedDataKey = key;
+      }
+
+      _mergeUserDataIntoVerses(newVerses, highlights, notes);
+
+      if (!mounted) return;
+      setState(() {
+        _verses = newVerses;
+        _isLoading = false;
+      });
+      // Posição do scroll mantém-se: não chamamos jumpTo aqui.
+    } catch (e) {
+      debugPrint('Erro ao trocar versão: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _showSnackBar('Erro ao trocar versão.', isError: true);
       }
     }
   }
@@ -165,6 +225,10 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
       );
       final highlights = await highlightsFuture;
       final notes = await notesFuture;
+
+      _cachedHighlights = highlights;
+      _cachedNotes = notes;
+      _cachedDataKey = '$_selectedBook::$_selectedChapter';
 
       _mergeUserDataIntoVerses(newVerses, highlights, notes);
 
@@ -694,10 +758,7 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
                 activeColor: _activeColor,
                 currentVersion: _bibleRepository.version,
                 availableVersions: BibleRepository.availableVersions,
-                onVersionSelected: (version) async {
-                  _bibleRepository.version = version;
-                  await _loadInitialData();
-                },
+                onVersionSelected: (version) => _changeVersion(version),
                 onDownloadVersion: (verCode, onProgress) =>
                     _bibleRepository.downloadNewVersion(verCode, onProgress),
               ),
