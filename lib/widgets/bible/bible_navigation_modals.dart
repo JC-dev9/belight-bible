@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../utils/theme.dart';
+import '../../data/bible_repository.dart';
 
 class BibleModals {
-  
+
   /// Modal principal de navegação: Livro → Capítulo → Versículo
-  /// Ao clicar num livro, expande os capítulos como grid abaixo.
-  /// Ao clicar num capítulo, abre modal bottom com os versículos.
-  /// Ao clicar num versículo, navega diretamente.
   static void showBookSelector(
       BuildContext context, {
       required Color backgroundColor,
@@ -111,6 +109,7 @@ class BibleModals {
     );
   }
 
+  /// Seletor de versão com suporte a download inline (KJV, NIV, etc.)
   static void showVersionSelector(
     BuildContext context, {
     required Color backgroundColor,
@@ -119,62 +118,410 @@ class BibleModals {
     required String currentVersion,
     required Map<String, String> availableVersions,
     required Function(String) onVersionSelected,
+    required Future<void> Function(String, Function(double)) onDownloadVersion,
   }) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: backgroundColor,
+      backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) {
-        return ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.5,
+      builder: (context) => _VersionSelectorSheet(
+        backgroundColor: backgroundColor,
+        textColor: textColor,
+        activeColor: activeColor,
+        currentVersion: currentVersion,
+        availableVersions: availableVersions,
+        onVersionSelected: onVersionSelected,
+        onDownloadVersion: onDownloadVersion,
+      ),
+    );
+  }
+}
+
+// ===========================================================================
+// _VersionSelectorSheet — modal com estados de instalação e download
+// ===========================================================================
+
+class _VersionSelectorSheet extends StatefulWidget {
+  final Color backgroundColor;
+  final Color textColor;
+  final Color activeColor;
+  final String currentVersion;
+  final Map<String, String> availableVersions;
+  final Function(String) onVersionSelected;
+  final Future<void> Function(String, Function(double)) onDownloadVersion;
+
+  const _VersionSelectorSheet({
+    required this.backgroundColor,
+    required this.textColor,
+    required this.activeColor,
+    required this.currentVersion,
+    required this.availableVersions,
+    required this.onVersionSelected,
+    required this.onDownloadVersion,
+  });
+
+  @override
+  State<_VersionSelectorSheet> createState() => _VersionSelectorSheetState();
+}
+
+class _VersionSelectorSheetState extends State<_VersionSelectorSheet> {
+  // verCode → true se instalada
+  final Map<String, bool> _installed = {};
+  // verCode → progresso de download (null = não está a baixar)
+  final Map<String, double?> _downloadProgress = {};
+  // verCode → mensagem de erro
+  final Map<String, String?> _errors = {};
+
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkInstalled();
+  }
+
+  Future<void> _checkInstalled() async {
+    final results = await Future.wait(
+      widget.availableVersions.keys.map(
+        (code) => BibleRepository.isVersionDownloaded(code),
+      ),
+    );
+    if (!mounted) return;
+    setState(() {
+      int i = 0;
+      for (final code in widget.availableVersions.keys) {
+        _installed[code] = results[i++];
+      }
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _startDownload(String code) async {
+    setState(() {
+      _downloadProgress[code] = 0.0;
+      _errors[code] = null;
+    });
+    try {
+      await widget.onDownloadVersion(code, (progress) {
+        if (mounted) setState(() => _downloadProgress[code] = progress);
+      });
+      if (mounted) {
+        setState(() {
+          _installed[code] = true;
+          _downloadProgress[code] = null;
+        });
+        // Seleccionar automaticamente após download
+        widget.onVersionSelected(code);
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _downloadProgress[code] = null;
+          _errors[code] = 'Falha no download. Verifique a ligação.';
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final installed = widget.availableVersions.entries
+        .where((e) => _installed[e.key] == true)
+        .toList();
+    final notInstalled = widget.availableVersions.entries
+        .where((e) => _installed[e.key] != true)
+        .toList();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: widget.backgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.7,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle bar
+          Container(
+            margin: const EdgeInsets.only(top: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: widget.textColor.withOpacity(0.25),
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+            child: Row(
               children: [
-                Text('Versão da Bíblia',
-                    style: TextStyle(
-                        color: textColor,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold)),
-                const SizedBox(height: 10),
-                Flexible(
-                  child: ListView(
-                    shrinkWrap: true,
-                    children: availableVersions.entries.map((entry) {
-                      final isSelected = currentVersion == entry.key;
-                      return ListTile(
-                        title: Text(entry.value,
-                            style: TextStyle(
-                                color: textColor,
-                                fontWeight: isSelected
-                                    ? FontWeight.bold
-                                    : FontWeight.normal)),
-                        trailing: isSelected
-                            ? Icon(Icons.check, color: activeColor)
-                            : null,
-                        onTap: () {
-                          if (!isSelected) {
-                              onVersionSelected(entry.key);
-                          }
-                          Navigator.pop(context);
-                        },
-                      );
-                    }).toList(),
+                Text(
+                  'Versão da Bíblia',
+                  style: TextStyle(
+                    color: widget.textColor,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
           ),
-        );
+
+          if (_isLoading)
+            Padding(
+              padding: const EdgeInsets.all(32),
+              child: CircularProgressIndicator(color: widget.activeColor),
+            )
+          else
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                children: [
+                  // Secção: Instaladas
+                  if (installed.isNotEmpty) ...[
+                    _buildSectionHeader('INSTALADAS'),
+                    ...installed.map((e) => _buildInstalledTile(e.key, e.value)),
+                    const SizedBox(height: 8),
+                  ],
+
+                  // Secção: Disponíveis para download
+                  if (notInstalled.isNotEmpty) ...[
+                    _buildSectionHeader('DISPONÍVEIS PARA DOWNLOAD'),
+                    ...notInstalled.map(
+                      (e) => _buildDownloadTile(e.key, e.value),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String label) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 8, 4, 6),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.1,
+          color: widget.textColor.withOpacity(0.45),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInstalledTile(String code, String name) {
+    final isSelected = widget.currentVersion.toUpperCase() == code.toUpperCase();
+    return _VersionTile(
+      code: code,
+      name: name,
+      textColor: widget.textColor,
+      activeColor: widget.activeColor,
+      isSelected: isSelected,
+      trailing: isSelected
+          ? Icon(Icons.check_circle_rounded, color: widget.activeColor, size: 22)
+          : Icon(Icons.circle_outlined,
+              color: widget.textColor.withOpacity(0.25), size: 22),
+      onTap: () {
+        if (!isSelected) widget.onVersionSelected(code);
+        Navigator.pop(context);
       },
     );
   }
+
+  Widget _buildDownloadTile(String code, String name) {
+    final progress = _downloadProgress[code];
+    final isDownloading = progress != null;
+    final error = _errors[code];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _VersionTile(
+          code: code,
+          name: name,
+          textColor: widget.textColor,
+          activeColor: widget.activeColor,
+          isSelected: false,
+          trailing: isDownloading
+              ? SizedBox(
+                  width: 36,
+                  height: 36,
+                  child: CircularProgressIndicator(
+                    value: progress,
+                    strokeWidth: 3,
+                    color: widget.activeColor,
+                  ),
+                )
+              : Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: widget.activeColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.download_rounded,
+                          size: 14, color: widget.activeColor),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Baixar',
+                        style: TextStyle(
+                          color: widget.activeColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+          onTap: isDownloading ? null : () => _startDownload(code),
+        ),
+
+        if (isDownloading && progress != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    backgroundColor: widget.textColor.withOpacity(0.08),
+                    color: widget.activeColor,
+                    minHeight: 4,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${(progress * 100).toStringAsFixed(0)}%',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: widget.textColor.withOpacity(0.5),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        if (error != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Row(
+              children: [
+                Icon(Icons.error_outline, size: 14, color: Colors.redAccent),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    error,
+                    style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
 }
+
+/// Tile reutilizável para uma versão da Bíblia
+class _VersionTile extends StatelessWidget {
+  final String code;
+  final String name;
+  final Color textColor;
+  final Color activeColor;
+  final bool isSelected;
+  final Widget trailing;
+  final VoidCallback? onTap;
+
+  const _VersionTile({
+    required this.code,
+    required this.name,
+    required this.textColor,
+    required this.activeColor,
+    required this.isSelected,
+    required this.trailing,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? activeColor.withOpacity(0.08)
+              : textColor.withOpacity(0.04),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? activeColor.withOpacity(0.4)
+                : textColor.withOpacity(0.08),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? activeColor.withOpacity(0.15)
+                    : textColor.withOpacity(0.07),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                code.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: isSelected ? activeColor : textColor.withOpacity(0.6),
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: TextStyle(
+                      color: isSelected ? activeColor : textColor,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.normal,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            trailing,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
 
 /// Widget statefull para o picker de Livro → Capítulo → Versículo
 class _BookChapterVersePicker extends StatefulWidget {

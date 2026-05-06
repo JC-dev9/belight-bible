@@ -698,6 +698,8 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
                   _bibleRepository.version = version;
                   await _loadInitialData();
                 },
+                onDownloadVersion: (verCode, onProgress) =>
+                    _bibleRepository.downloadNewVersion(verCode, onProgress),
               ),
               onBookTap: () => BibleModals.showBookSelector(
                 context,

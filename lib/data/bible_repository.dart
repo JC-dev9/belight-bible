@@ -9,12 +9,33 @@ class BibleRepository {
 
   BibleRepository({required this.version});
 
-  // Versões disponíveis localmente em assets/bible/
+  // Versões incluídas no bundle (assets) — disponíveis offline sem download
+  static const Set<String> _bundledVersions = {'acf', 'arc', 'ntlh'};
+
+  // Todas as versões disponíveis: bundle + download
   static const Map<String, String> availableVersions = {
     'ACF': 'Almeida Corrigida Fiel',
     'ARC': 'Almeida Revista e Corrigida',
     'NTLH': 'Nova Tradução na Linguagem de Hoje',
+    'KJV': 'King James Version',
+    'NIV': 'New International Version',
   };
+
+  /// Versões incluídas no app (sem necessidade de download)
+  static bool isBundled(String verCode) =>
+      _bundledVersions.contains(verCode.toLowerCase());
+
+  /// Verifica se uma versão já foi transferida para o dispositivo
+  static Future<bool> isVersionDownloaded(String verCode) async {
+    if (isBundled(verCode)) return true;
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/${verCode.toLowerCase()}.json');
+      return file.existsSync();
+    } catch (_) {
+      return false;
+    }
+  }
 
   /// Carrega a Bíblia localmente
   Future<void> ensureLoaded() async {
