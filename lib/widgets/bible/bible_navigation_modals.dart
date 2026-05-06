@@ -318,18 +318,75 @@ class _VersionSelectorSheetState extends State<_VersionSelectorSheet> {
     );
   }
 
+  Future<void> _confirmAndDelete(String code) async {
+    final name = widget.availableVersions[code] ?? code;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: widget.backgroundColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Apagar $name?', style: TextStyle(color: widget.textColor, fontSize: 16)),
+        content: Text(
+          'O ficheiro será removido do dispositivo.\nPodes voltar a baixar a qualquer momento.',
+          style: TextStyle(color: widget.textColor.withOpacity(0.7), fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancelar', style: TextStyle(color: widget.textColor.withOpacity(0.5))),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Apagar', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    await BibleRepository.deleteVersion(code);
+
+    // Se a versão ativa foi apagada, mudar para ACF
+    final wasActive = widget.currentVersion.toUpperCase() == code.toUpperCase();
+    if (wasActive) {
+      widget.onVersionSelected('ACF');
+    }
+
+    // Atualizar a lista
+    setState(() => _installed[code] = false);
+  }
+
   Widget _buildInstalledTile(String code, String name) {
     final isSelected = widget.currentVersion.toUpperCase() == code.toUpperCase();
+    final canDelete = !BibleRepository.isBundled(code);
+
     return _VersionTile(
       code: code,
       name: name,
       textColor: widget.textColor,
       activeColor: widget.activeColor,
       isSelected: isSelected,
-      trailing: isSelected
-          ? Icon(Icons.check_circle_rounded, color: widget.activeColor, size: 22)
-          : Icon(Icons.circle_outlined,
-              color: widget.textColor.withOpacity(0.25), size: 22),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (canDelete)
+            GestureDetector(
+              onTap: () => _confirmAndDelete(code),
+              child: Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: Icon(
+                  Icons.delete_outline_rounded,
+                  size: 20,
+                  color: widget.textColor.withOpacity(0.35),
+                ),
+              ),
+            ),
+          isSelected
+              ? Icon(Icons.check_circle_rounded, color: widget.activeColor, size: 22)
+              : Icon(Icons.circle_outlined,
+                  color: widget.textColor.withOpacity(0.25), size: 22),
+        ],
+      ),
       onTap: () {
         if (!isSelected) widget.onVersionSelected(code);
         Navigator.pop(context);

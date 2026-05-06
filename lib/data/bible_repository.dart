@@ -54,6 +54,19 @@ class BibleRepository {
     _cachedBible = await LocalBibleLoader.load(version);
   }
 
+  /// Remove permanentemente uma versão do disco.
+  /// Apaga ambas as variantes (minúsculas e maiúsculas) para garantir limpeza total.
+  static Future<void> deleteVersion(String verCode) async {
+    final dir = await getApplicationDocumentsDirectory();
+    for (final name in [
+      verCode.toLowerCase(),
+      verCode.toUpperCase(),
+    ]) {
+      final file = File('${dir.path}/$name.json');
+      if (file.existsSync()) await file.delete();
+    }
+  }
+
   /// Lista de versões baixadas localmente
   static Future<List<String>> getDownloadedVersions() async {
     final dir = await getApplicationDocumentsDirectory();
