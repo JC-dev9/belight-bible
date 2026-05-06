@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/supabase_service.dart';
 import '../data/models/dynamic_models.dart';
+import 'legal_screen.dart';
 
 /// Tela de Perfil — carrega stats reais e perfil editável do Supabase.
 class ProfileScreen extends StatefulWidget {
@@ -181,6 +182,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 32),
+
+                  // Links Legais
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const LegalScreen(
+                                title: 'Política de Privacidade',
+                                content: LegalContent.privacyPolicy,
+                              ),
+                            ),
+                          ),
+                          child: Text(
+                            'Política de Privacidade',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(context).hintColor,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                        Text('•', style: TextStyle(color: Theme.of(context).hintColor)),
+                        TextButton(
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const LegalScreen(
+                                title: 'Termos de Serviço',
+                                content: LegalContent.termsOfService,
+                              ),
+                            ),
+                          ),
+                          child: Text(
+                            'Termos de Serviço',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(context).hintColor,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
