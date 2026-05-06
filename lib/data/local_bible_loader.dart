@@ -9,13 +9,19 @@ class LocalBibleLoader {
     // 1. TENTATIVA: Ler do armazenamento interno (caso tenha sido baixado)
     try {
       final directory = await getApplicationDocumentsDirectory();
-      final file = File('${directory.path}/$version.json');
 
-      if (await file.exists()) {
-        final jsonString = await file.readAsString();
-        // Verifica se o arquivo não está vazio antes de tentar decodificar
-        if (jsonString.trim().isNotEmpty) {
-          return jsonDecode(jsonString);
+      // Tentar minúsculas primeiro (padrão actual) e depois maiúsculas (retrocompat.)
+      final candidates = [
+        File('${directory.path}/${version.toLowerCase()}.json'),
+        File('${directory.path}/${version.toUpperCase()}.json'),
+      ];
+
+      for (final file in candidates) {
+        if (await file.exists()) {
+          final jsonString = await file.readAsString();
+          if (jsonString.trim().isNotEmpty) {
+            return jsonDecode(jsonString);
+          }
         }
       }
     } catch (e) {
