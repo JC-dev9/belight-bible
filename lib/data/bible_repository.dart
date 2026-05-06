@@ -29,13 +29,21 @@ class BibleRepository {
   static bool isBundled(String verCode) =>
       _bundledVersions.contains(verCode.toLowerCase());
 
-  /// Verifica se uma versão já foi transferida para o dispositivo
+  /// Verifica se uma versão já foi transferida para o dispositivo.
+  /// Verifica ambas as capitalizações para compatibilidade com ficheiros antigos.
   static Future<bool> isVersionDownloaded(String verCode) async {
     if (isBundled(verCode)) return true;
     try {
       final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/${verCode.toLowerCase()}.json');
-      return file.existsSync();
+      // Preferência: minúsculas (padrão actual)
+      if (File('${dir.path}/${verCode.toLowerCase()}.json').existsSync()) {
+        return true;
+      }
+      // Retrocompatibilidade: maiúsculas (ficheiros baixados antes da correção)
+      if (File('${dir.path}/${verCode.toUpperCase()}.json').existsSync()) {
+        return true;
+      }
+      return false;
     } catch (_) {
       return false;
     }
@@ -61,9 +69,11 @@ class BibleRepository {
       String verCode, Function(double) onProgress) async {
     final dio = Dio();
     final directory = await getApplicationDocumentsDirectory();
-    final savePath = '${directory.path}/$verCode.json';
+    // Guardar SEMPRE em minúsculas para consistência com isVersionDownloaded
+    // e LocalBibleLoader (que também usa toLowerCase)
+    final savePath = '${directory.path}/${verCode.toLowerCase()}.json';
 
-    // URL Raw do GitHub
+    // URL Raw do GitHub — o repositório usa maiúsculas no nome do ficheiro
     final url =
         'https://raw.githubusercontent.com/damarals/biblias/main/inst/json/${verCode.toUpperCase()}.json';
 
