@@ -383,11 +383,13 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
           _selectedVerses.remove(index);
         } else {
           _selectedVerses.add(index);
+          _syncStyleToVerse(index);
         }
       });
     } else {
       setState(() {
         _selectedVerses.add(index);
+        _syncStyleToVerse(index);
       });
     }
   }
@@ -395,7 +397,17 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
   void _handleVerseLongPress(int index) {
     setState(() {
       _selectedVerses.add(index);
+      _syncStyleToVerse(index);
     });
+  }
+
+  // Sincroniza _selectedHighlightStyle com o tipo de grifo já guardado no versículo
+  void _syncStyleToVerse(int index) {
+    final storedType = _verses[index]['highlight_type'] as String?;
+    if (storedType == null) return;
+    _selectedHighlightStyle = storedType == 'text'
+        ? HighlightStyle.fundoTexto
+        : HighlightStyle.fundoVersiculo;
   }
 
   Future<void> _handleColorSelected(Color color) async {
@@ -405,19 +417,33 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
     setState(() {
       for (var i in _selectedVerses) {
         _verses[i]['highlighted'] = color;
-        _verses[i]['highlight_type'] =
-            highlightType; // Store type locally immediately
+        _verses[i]['highlight_type'] = highlightType;
         final dbColor = color.value.toSigned(32);
+        final verseNum = _verses[i]['number'] as int;
 
         _supabaseService.saveHighlight(
           Highlight(
             book: _selectedBook,
             chapter: _selectedChapter,
-            verse: _verses[i]['number'],
+            verse: verseNum,
             color: dbColor,
             type: highlightType,
           ),
         );
+
+        // Mantém a cache sincronizada para evitar que _changeVersion
+        // sobreponha com dados obsoletos ao trocar de versão
+        _cachedHighlights = [
+          for (final h in _cachedHighlights)
+            if (h.verse != verseNum) h,
+          Highlight(
+            book: _selectedBook,
+            chapter: _selectedChapter,
+            verse: verseNum,
+            color: dbColor,
+            type: highlightType,
+          ),
+        ];
       }
       _selectedVerses.clear();
     });
@@ -427,12 +453,18 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
     setState(() {
       for (var i in _selectedVerses) {
         _verses[i]['highlighted'] = null;
-        _verses[i]['highlight_type'] = null; // Clear type as well
+        _verses[i]['highlight_type'] = null;
+        final verseNum = _verses[i]['number'] as int;
         _supabaseService.removeHighlight(
           _selectedBook,
           _selectedChapter,
-          _verses[i]['number'],
+          verseNum,
         );
+
+        _cachedHighlights = [
+          for (final h in _cachedHighlights)
+            if (h.verse != verseNum) h,
+        ];
       }
       _selectedVerses.clear();
     });
@@ -840,8 +872,40 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
                 onClose: () => setState(() => _selectedVerses.clear()),
                 onResetHighlight: _handleResetHighlight,
                 onColorSelected: _handleColorSelected,
-                onStyleToggle: (style) =>
-                    setState(() => _selectedHighlightStyle = style),
+                onStyleToggle: (style) {
+                  final highlightType =
+                      style == HighlightStyle.fundoTexto ? 'text' : 'block';
+                  setState(() {
+                    _selectedHighlightStyle = style;
+                    // Guarda imediatamente se o versículo já tem grifo
+                    for (var i in _selectedVerses) {
+                      final existingColor =
+                          _verses[i]['highlighted'] as Color?;
+                      if (existingColor == null) continue;
+                      final verseNum = _verses[i]['number'] as int;
+                      final dbColor = existingColor.value.toSigned(32);
+                      _verses[i]['highlight_type'] = highlightType;
+                      _supabaseService.saveHighlight(Highlight(
+                        book: _selectedBook,
+                        chapter: _selectedChapter,
+                        verse: verseNum,
+                        color: dbColor,
+                        type: highlightType,
+                      ));
+                      _cachedHighlights = [
+                        for (final h in _cachedHighlights)
+                          if (h.verse != verseNum) h,
+                        Highlight(
+                          book: _selectedBook,
+                          chapter: _selectedChapter,
+                          verse: verseNum,
+                          color: dbColor,
+                          type: highlightType,
+                        ),
+                      ];
+                    }
+                  });
+                },
                 onAdvancedColorTap: _showAdvancedColorPicker,
                 onCopy: _handleCopy,
                 onShare: _handleShare,
