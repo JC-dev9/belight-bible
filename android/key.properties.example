@@ -1,0 +1,4 @@
+storePassword=<password-do-keystore>
+keyPassword=<password-da-chave>
+keyAlias=<alias-da-chave>
+storeFile=<caminho-absoluto-para-o-ficheiro.jks>
