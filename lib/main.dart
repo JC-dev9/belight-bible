@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -32,47 +34,57 @@ class HiveKeys {
 }
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  await SentryFlutter.init(
+    (options) {
+      options.dsn = kReleaseMode && AppEnv.sentryDsn.isNotEmpty
+          ? AppEnv.sentryDsn
+          : null;
+      options.tracesSampleRate = 0.2;
+    },
+    appRunner: () async {
+      WidgetsFlutterBinding.ensureInitialized();
 
-  // Inicializa Hive
-  await Hive.initFlutter();
-  await Hive.openBox('bibleBox');
-  await Hive.openBox(HiveKeys.settingsBox);
+      // Inicializa Hive
+      await Hive.initFlutter();
+      await Hive.openBox('bibleBox');
+      await Hive.openBox(HiveKeys.settingsBox);
 
-  // Valida configuração em modo debug
-  AppEnv.assertConfigured();
+      // Valida configuração em modo debug
+      AppEnv.assertConfigured();
 
-  // Inicializa Supabase
-  await Supabase.initialize(
-    url: AppEnv.supabaseUrl,
-    anonKey: AppEnv.supabaseAnonKey,
+      // Inicializa Supabase
+      await Supabase.initialize(
+        url: AppEnv.supabaseUrl,
+        anonKey: AppEnv.supabaseAnonKey,
+      );
+
+      // Carregar ThemeMode persistido
+      final settingsBox = Hive.box(HiveKeys.settingsBox);
+      final savedTheme = settingsBox.get(HiveKeys.themeMode, defaultValue: 'system');
+      appThemeNotifier.value = _parseThemeMode(savedTheme);
+
+      // Verificar "Lembrar-me" — se não está ativado, fazer sign out
+      final rememberMe = settingsBox.get(HiveKeys.rememberMe, defaultValue: true);
+      if (rememberMe == false) {
+        await Supabase.instance.client.auth.signOut();
+      }
+
+      // Re-agendar a notificação diária, se activa, sem bloquear o cold start.
+      // O init() do NotificationService corre lazy dentro de scheduleDailyVerse,
+      // evitando carregar timezone (~700KB) para quem não usa notificações.
+      final dailyEnabled =
+          settingsBox.get(HiveKeys.dailyVerseEnabled, defaultValue: false) == true;
+      if (dailyEnabled) {
+        final hour = settingsBox.get(HiveKeys.dailyVerseHour, defaultValue: 8) as int;
+        final minute =
+            settingsBox.get(HiveKeys.dailyVerseMinute, defaultValue: 0) as int;
+        unawaited(NotificationService.instance
+            .scheduleDailyVerse(hour: hour, minute: minute));
+      }
+
+      runApp(const ProviderScope(child: MyApp()));
+    },
   );
-
-  // Carregar ThemeMode persistido
-  final settingsBox = Hive.box(HiveKeys.settingsBox);
-  final savedTheme = settingsBox.get(HiveKeys.themeMode, defaultValue: 'system');
-  appThemeNotifier.value = _parseThemeMode(savedTheme);
-
-  // Verificar "Lembrar-me" — se não está ativado, fazer sign out
-  final rememberMe = settingsBox.get(HiveKeys.rememberMe, defaultValue: true);
-  if (rememberMe == false) {
-    await Supabase.instance.client.auth.signOut();
-  }
-
-  // Re-agendar a notificação diária, se activa, sem bloquear o cold start.
-  // O init() do NotificationService corre lazy dentro de scheduleDailyVerse,
-  // evitando carregar timezone (~700KB) para quem não usa notificações.
-  final dailyEnabled =
-      settingsBox.get(HiveKeys.dailyVerseEnabled, defaultValue: false) == true;
-  if (dailyEnabled) {
-    final hour = settingsBox.get(HiveKeys.dailyVerseHour, defaultValue: 8) as int;
-    final minute =
-        settingsBox.get(HiveKeys.dailyVerseMinute, defaultValue: 0) as int;
-    unawaited(NotificationService.instance
-        .scheduleDailyVerse(hour: hour, minute: minute));
-  }
-
-  runApp(const ProviderScope(child: MyApp()));
 }
 
 ThemeMode _parseThemeMode(String value) {

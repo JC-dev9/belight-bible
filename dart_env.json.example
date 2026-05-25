@@ -1,4 +1,5 @@
 {
   "SUPABASE_URL": "https://your-project.supabase.co",
-  "SUPABASE_ANON_KEY": "your-anon-key-here"
+  "SUPABASE_ANON_KEY": "your-anon-key-here",
+  "SENTRY_DSN": "https://your-dsn@sentry.io/project-id"
 }
