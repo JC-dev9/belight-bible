@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../login_screen.dart';
 import '../profile_screen.dart';
 import '../saved_data_screen.dart';
 import '../connections_screen.dart';
@@ -167,7 +168,10 @@ class MenuTab extends StatelessWidget {
             onTap: () async {
               await Supabase.instance.client.auth.signOut();
               if (context.mounted) {
-                 Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  (route) => false,
+                );
               }
             },
           ),

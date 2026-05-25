@@ -98,9 +98,9 @@ class MyApp extends StatelessWidget {
     final settingsBox = Hive.box(HiveKeys.settingsBox);
     final onboardingDone =
         settingsBox.get(HiveKeys.onboardingCompleted, defaultValue: false) == true;
-    final initialRoute = !onboardingDone
-        ? '/onboarding'
-        : (hasSession ? '/home' : '/');
+    final Widget initialScreen = !onboardingDone
+        ? const OnboardingScreen()
+        : (hasSession ? const HomeScreen() : const LoginScreen());
 
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: appThemeNotifier,
@@ -141,9 +141,8 @@ class MyApp extends StatelessWidget {
             ),
           ),
           themeMode: themeMode,
-          initialRoute: initialRoute,
+          home: initialScreen,
           routes: {
-            '/': (context) => const LoginScreen(),
             '/home': (context) => const HomeScreen(),
             '/register': (context) => const RegisterScreen(),
             '/forgot-password': (context) => const ForgotPasswordScreen(),

@@ -4,6 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../main.dart' show HiveKeys;
 import '../utils/theme.dart';
+import 'home_screen.dart';
+import 'login_screen.dart';
 
 class _OnboardPage {
   final IconData icon;
@@ -62,8 +64,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     if (!mounted) return;
     final hasSession =
         Supabase.instance.client.auth.currentSession != null;
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      hasSession ? '/home' : '/',
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => hasSession ? const HomeScreen() : const LoginScreen(),
+      ),
       (route) => false,
     );
   }
