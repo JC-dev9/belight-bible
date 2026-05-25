@@ -230,7 +230,7 @@ Concedemos uma licença **pessoal, não exclusiva e não transferível** para us
 ## 5. Conteúdo Bíblico
 
 - **ACF** e **ARC** — domínio público.
-- **NTLH** — utilizada para fins educativos não comerciais.
+- **NTLH** — Nova Tradução na Linguagem de Hoje © Sociedade Bíblica do Brasil. Utilizada sem fins comerciais, com atribuição ao titular dos direitos.
 
 ---
 
