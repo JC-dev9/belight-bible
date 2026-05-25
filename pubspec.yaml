@@ -1,5 +1,5 @@
-name: bibleapp
-description: "A new Flutter project."
+name: belight_bible
+description: "Leia, destaque e anote a Bíblia em Português. Várias traduções disponíveis, planos de leitura, devocionais diários, estudo com IA e sincronização entre dispositivos. Funciona offline."
 publish_to: "none"
 
 version: 1.0.0+1
