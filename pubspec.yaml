@@ -43,6 +43,7 @@ flutter:
 
   assets:
     - assets/logo.png
+    - assets/google_logo.png
     - assets/bible/acf.json
     - assets/bible/arc.json
     - assets/bible/ntlh.json

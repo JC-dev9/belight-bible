@@ -68,13 +68,10 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  /// Login social com o provedor OAuth (Google ou Facebook)
-  Future<void> _handleOAuthLogin(OAuthProvider provider) async {
+  Future<void> _handleGoogleLogin() async {
     try {
-      final providerName = provider == OAuthProvider.google ? 'Google' : 'Facebook';
-
       await Supabase.instance.client.auth.signInWithOAuth(
-        provider,
+        OAuthProvider.google,
         redirectTo: 'io.supabase.belightapp://login-callback/',
       );
 
@@ -88,7 +85,7 @@ class _LoginScreenState extends State<LoginScreen> {
       });
     } catch (e) {
       if (mounted) {
-        _showSnackBar('Erro no login social. Tente novamente.', isError: true);
+        _showSnackBar('Erro ao entrar com o Google. Tente novamente.', isError: true);
       }
     }
   }
@@ -311,27 +308,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Botões de login social
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildSocialButton(
-                      icon: Icons.g_mobiledata,
-                      label: 'Google',
-                      iconColor: Colors.red,
-                      onTap: () => _handleOAuthLogin(OAuthProvider.google),
-                      borderColor: theme.dividerColor.withValues(alpha: 0.4),
-                    ),
-                    const SizedBox(width: 16),
-                    _buildSocialButton(
-                      icon: Icons.facebook,
-                      label: 'Facebook',
-                      iconColor: const Color(0xFF1877F2),
-                      onTap: () => _handleOAuthLogin(OAuthProvider.facebook),
-                      borderColor: theme.dividerColor.withValues(alpha: 0.4),
-                    ),
-                  ],
-                ),
+                // Botão de login com Google
+                _buildGoogleButton(theme),
                 const SizedBox(height: 40),
               ],
             ),
@@ -404,25 +382,44 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Botão social
-  Widget _buildSocialButton({
-    required IconData icon,
-    required String label,
-    required Color iconColor,
-    required VoidCallback onTap,
-    required Color borderColor,
-  }) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: onTap,
-      child: Container(
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          border: Border.all(color: borderColor),
-          borderRadius: BorderRadius.circular(12),
+  Widget _buildGoogleButton(ThemeData theme) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: OutlinedButton(
+        onPressed: _handleGoogleLogin,
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(
+            color: theme.dividerColor.withValues(alpha: 0.4),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
-        child: Icon(icon, size: 32, color: iconColor),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              'assets/google_logo.png',
+              width: 24,
+              height: 24,
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.g_mobiledata,
+                size: 28,
+                color: Colors.red,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Continuar com o Google',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: theme.textTheme.bodyMedium?.color,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
