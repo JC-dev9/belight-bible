@@ -68,12 +68,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Cor do NavigationBar: só usa tema bíblico na aba da Bíblia
   Color get _navBarColor {
-    final isSystemDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
-    
+    final isAppDark = Theme.of(context).brightness == Brightness.dark;
+
     if (_currentIndex != 1) {
-      return isSystemDark ? Colors.grey.shade900 : Colors.white;
+      return isAppDark ? Colors.grey.shade900 : Colors.white;
     }
-    
+
     switch (_bibleTheme) {
       case ReadingTheme.sepia: return AppColors.navSepia;
       case ReadingTheme.dark: return AppColors.navDark;
@@ -83,10 +83,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Cor dos ícones/labels do NavigationBar: só usa tema bíblico na aba da Bíblia
   Color get _navContentColor {
-    final isSystemDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
-    
+    final isAppDark = Theme.of(context).brightness == Brightness.dark;
+
     if (_currentIndex != 1) {
-      return isSystemDark ? Colors.grey.shade400 : Colors.black87;
+      return isAppDark ? Colors.grey.shade400 : Colors.black87;
     }
 
     switch (_bibleTheme) {
