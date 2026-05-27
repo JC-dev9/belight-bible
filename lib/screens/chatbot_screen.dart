@@ -466,6 +466,16 @@ class ChatBotScreenState extends State<ChatBotScreen> {
       );
 
       final data = response.data;
+
+      if (response.status == 429) {
+        setState(() {
+          botMessage.text = (data is Map && data['message'] is String)
+              ? data['message'] as String
+              : 'Atingiste o limite diário de perguntas. Volta amanhã.';
+        });
+        return;
+      }
+
       if (data != null && data['response'] != null) {
         setState(() {
           botMessage.text = _formatBibleLinks(data['response'] as String);
@@ -476,6 +486,15 @@ class ChatBotScreenState extends State<ChatBotScreen> {
           botMessage.text = 'Desculpe, não consegui conectar ao serviço. Tente novamente em alguns instantes.';
         });
       }
+    } on FunctionException catch (e) {
+      final details = e.details;
+      String message = 'Desculpe, não consegui conectar ao serviço. Tente novamente em alguns instantes.';
+      if (e.status == 429 && details is Map && details['message'] is String) {
+        message = details['message'] as String;
+      }
+      setState(() {
+        botMessage.text = message;
+      });
     } catch (e) {
       setState(() {
         botMessage.text = 'Desculpe, não consegui conectar ao serviço. Tente novamente em alguns instantes.';
