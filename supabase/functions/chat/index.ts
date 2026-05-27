@@ -8,7 +8,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "
 
 const DAILY_LIMIT = 50;
 
-const SYSTEM_PROMPT = `Você é um especialista em Bíblia, teologia cristã e princípios do cristianismo.
+const BASE_SYSTEM_PROMPT = `Você é um especialista em Bíblia, teologia cristã e princípios do cristianismo.
 Todas as suas respostas devem ser baseadas nas Escrituras Sagradas, na fé cristã e em valores bíblicos.
 Responda sempre em Português de Portugal.
 
@@ -22,6 +22,13 @@ Exemplos:
 
 Não use abreviações nos links. O nome do livro deve estar completo.
 NUNCA forneça apenas o link \`bible://...\` sem o texto do link. Exemplo ERRADO: \`(bible://João/3/16)\`. Exemplo CORRETO: \`[João 3:16](bible://João/3/16)\`.`;
+
+function buildSystemPrompt(firstName: string | null): string {
+  if (!firstName) return BASE_SYSTEM_PROMPT;
+  return `${BASE_SYSTEM_PROMPT}
+
+O utilizador chama-se ${firstName}. Trate-o por esse nome muito ocasionalmente e com naturalidade — apenas quando fizer sentido humanizar a resposta, nunca em todas as mensagens.`;
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -80,9 +87,19 @@ Deno.serve(async (req: Request) => {
 
     const recentMessages = messages.slice(-6);
 
-    let responseText = await callGroq(recentMessages);
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", userData.user.id)
+      .maybeSingle();
+    const firstName = typeof profile?.full_name === "string" && profile.full_name.trim().length > 0
+      ? profile.full_name.trim().split(/\s+/)[0]
+      : null;
+    const systemPrompt = buildSystemPrompt(firstName);
+
+    let responseText = await callGroq(recentMessages, systemPrompt);
     if (!responseText) {
-      responseText = await callGemini(recentMessages);
+      responseText = await callGemini(recentMessages, systemPrompt);
     }
     if (!responseText) {
       return jsonResponse({ error: "AI service unavailable" }, 503);
@@ -95,12 +112,15 @@ Deno.serve(async (req: Request) => {
   }
 });
 
-async function callGroq(messages: Array<{ role: string; content: string }>): Promise<string | null> {
+async function callGroq(
+  messages: Array<{ role: string; content: string }>,
+  systemPrompt: string,
+): Promise<string | null> {
   if (!GROQ_API_KEY) return null;
 
   try {
     const groqMessages = [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: systemPrompt },
       ...messages,
     ];
 
@@ -132,7 +152,10 @@ async function callGroq(messages: Array<{ role: string; content: string }>): Pro
   }
 }
 
-async function callGemini(messages: Array<{ role: string; content: string }>): Promise<string | null> {
+async function callGemini(
+  messages: Array<{ role: string; content: string }>,
+  systemPrompt: string,
+): Promise<string | null> {
   if (!GEMINI_API_KEY) return null;
 
   try {
@@ -147,7 +170,7 @@ async function callGemini(messages: Array<{ role: string; content: string }>): P
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          system_instruction: { parts: [{ text: systemPrompt }] },
           contents,
         }),
       }
