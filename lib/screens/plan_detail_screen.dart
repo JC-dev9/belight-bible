@@ -233,7 +233,12 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
     final subtxt = isDark ? Colors.grey.shade500 : Colors.grey.shade500;
     final cardBg = isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade50;
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) Navigator.pop(context, _dataChanged);
+      },
+      child: Scaffold(
       backgroundColor: bg,
       body: CustomScrollView(
         slivers: [
@@ -316,6 +321,7 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
 
           const SliverToBoxAdapter(child: SizedBox(height: 40)),
         ],
+      ),
       ),
     );
   }
