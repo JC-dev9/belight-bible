@@ -38,7 +38,7 @@ Future<void> main() async {
     (options) {
       options.dsn = kReleaseMode && AppEnv.sentryDsn.isNotEmpty
           ? AppEnv.sentryDsn
-          : null;
+          : '';
       options.tracesSampleRate = 0.2;
     },
     appRunner: () async {
