@@ -489,7 +489,13 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
 
   Future<void> _handleAskAI() async {
     final text = _getSelectedText();
-    final prompt = "Explique: \"$text\"";
+    final sorted = _selectedVerses.toList()..sort();
+    final firstVerse = _verses[sorted.first]['number'];
+    final lastVerse = _verses[sorted.last]['number'];
+    final reference = sorted.length == 1
+        ? '$_selectedBook $_selectedChapter:$firstVerse'
+        : '$_selectedBook $_selectedChapter:$firstVerse-$lastVerse';
+    final prompt = 'Explique $reference: "$text"';
 
     if (mounted) {
       setState(() => _selectedVerses.clear());
