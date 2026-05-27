@@ -81,44 +81,75 @@ class _PlansTabState extends State<PlansTab> {
         .where((p) => !enrolledPlanIds.contains(p.id))
         .toList();
 
-    return RefreshIndicator(
-      color: Colors.amber,
-      onRefresh: _loadPlans,
-      child: CustomScrollView(
-        slivers: [
-          // Header
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Planos de Leitura',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: txt,
+    return SafeArea(
+      bottom: false,
+      child: RefreshIndicator(
+        color: Colors.amber,
+        onRefresh: _loadPlans,
+        child: CustomScrollView(
+          slivers: [
+            // Header
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Planos de Leitura',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: txt,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Organize a sua leitura bíblica com planos guiados',
-                    style: TextStyle(fontSize: 14, color: txt.withOpacity(0.5)),
-                  ),
-                  const SizedBox(height: 24),
-                ],
+                    const SizedBox(height: 6),
+                    Text(
+                      'Organize a sua leitura bíblica com planos guiados',
+                      style: TextStyle(fontSize: 14, color: txt.withOpacity(0.5)),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                ),
               ),
             ),
-          ),
 
-          // Meus Planos
-          if (enrolledPlans.isNotEmpty) ...[
+            // Meus Planos
+            if (enrolledPlans.isNotEmpty) ...[
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                  child: Text(
+                    'MEUS PLANOS',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                      color: txt.withOpacity(0.4),
+                    ),
+                  ),
+                ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                sliver: SliverList.builder(
+                  itemCount: enrolledPlans.length,
+                  itemBuilder: (_, i) {
+                    final plan = enrolledPlans[i];
+                    final userPlan = _getUserPlan(plan.id)!;
+                    return _buildEnrolledPlanCard(plan, userPlan, txt);
+                  },
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            ],
+
+            // Header de Planos Disponíveis
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
                 child: Text(
-                  'MEUS PLANOS',
+                  enrolledPlans.isEmpty ? 'PLANOS DISPONÍVEIS' : 'EXPLORAR',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
@@ -128,59 +159,31 @@ class _PlansTabState extends State<PlansTab> {
                 ),
               ),
             ),
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              sliver: SliverList.builder(
-                itemCount: enrolledPlans.length,
-                itemBuilder: (_, i) {
-                  final plan = enrolledPlans[i];
-                  final userPlan = _getUserPlan(plan.id)!;
-                  return _buildEnrolledPlanCard(plan, userPlan, txt);
-                },
-              ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
-          ],
 
-          // Header de Planos Disponíveis
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-              child: Text(
-                enrolledPlans.isEmpty ? 'PLANOS DISPONÍVEIS' : 'EXPLORAR',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                  color: txt.withOpacity(0.4),
-                ),
-              ),
-            ),
-          ),
-
-          // Lista de planos disponíveis (lazy) ou mensagem vazia
-          if (availablePlans.isEmpty)
-            SliverToBoxAdapter(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Text(
-                    'Você está inscrito em todos os planos! 🎉',
-                    style: TextStyle(color: txt.withOpacity(0.5)),
+            // Lista de planos disponíveis (lazy) ou mensagem vazia
+            if (availablePlans.isEmpty)
+              SliverToBoxAdapter(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Text(
+                      'Você está inscrito em todos os planos! 🎉',
+                      style: TextStyle(color: txt.withOpacity(0.5)),
+                    ),
                   ),
                 ),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                sliver: SliverList.builder(
+                  itemCount: availablePlans.length,
+                  itemBuilder: (_, i) =>
+                      _buildAvailablePlanCard(availablePlans[i], txt),
+                ),
               ),
-            )
-          else
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-              sliver: SliverList.builder(
-                itemCount: availablePlans.length,
-                itemBuilder: (_, i) =>
-                    _buildAvailablePlanCard(availablePlans[i], txt),
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
