@@ -36,12 +36,12 @@ class DailyVerseCard extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: accent.withOpacity(isDark ? 0.18 : 0.22),
+          color: accent.withValues(alpha: isDark ? 0.18 : 0.22),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: (isDark ? Colors.black : accent).withOpacity(isDark ? 0.30 : 0.10),
+            color: (isDark ? Colors.black : accent).withValues(alpha: isDark ? 0.30 : 0.10),
             blurRadius: 24,
             offset: const Offset(0, 10),
           ),
@@ -62,7 +62,7 @@ class DailyVerseCard extends StatelessWidget {
                   height: 1,
                   fontFamily: 'Serif',
                   fontWeight: FontWeight.w900,
-                  color: accent.withOpacity(isDark ? 0.10 : 0.12),
+                  color: accent.withValues(alpha: isDark ? 0.10 : 0.12),
                 ),
               ),
             ),
@@ -77,7 +77,7 @@ class DailyVerseCard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: accent.withOpacity(isDark ? 0.20 : 0.14),
+                          color: accent.withValues(alpha: isDark ? 0.20 : 0.14),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
@@ -142,7 +142,7 @@ class DailyVerseCard extends StatelessWidget {
                       Container(
                         height: 1,
                         width: 28,
-                        color: accent.withOpacity(0.5),
+                        color: accent.withValues(alpha: 0.5),
                       ),
                       const SizedBox(width: 10),
                       Expanded(

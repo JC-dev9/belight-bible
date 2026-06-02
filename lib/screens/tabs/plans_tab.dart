@@ -106,7 +106,7 @@ class _PlansTabState extends State<PlansTab> {
                     const SizedBox(height: 6),
                     Text(
                       'Organize a sua leitura bíblica com planos guiados',
-                      style: TextStyle(fontSize: 14, color: txt.withOpacity(0.5)),
+                      style: TextStyle(fontSize: 14, color: txt.withValues(alpha: 0.5)),
                     ),
                     const SizedBox(height: 24),
                   ],
@@ -125,7 +125,7 @@ class _PlansTabState extends State<PlansTab> {
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.2,
-                      color: txt.withOpacity(0.4),
+                      color: txt.withValues(alpha: 0.4),
                     ),
                   ),
                 ),
@@ -154,7 +154,7 @@ class _PlansTabState extends State<PlansTab> {
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.2,
-                    color: txt.withOpacity(0.4),
+                    color: txt.withValues(alpha: 0.4),
                   ),
                 ),
               ),
@@ -168,7 +168,7 @@ class _PlansTabState extends State<PlansTab> {
                     padding: const EdgeInsets.all(32),
                     child: Text(
                       'Você está inscrito em todos os planos! 🎉',
-                      style: TextStyle(color: txt.withOpacity(0.5)),
+                      style: TextStyle(color: txt.withValues(alpha: 0.5)),
                     ),
                   ),
                 ),
@@ -204,9 +204,9 @@ class _PlansTabState extends State<PlansTab> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.05),
+          color: color.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.15)),
+          border: Border.all(color: color.withValues(alpha: 0.15)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,7 +218,7 @@ class _PlansTabState extends State<PlansTab> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.12),
+                    color: color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(_getIconData(plan.icon), color: color, size: 22),
@@ -245,7 +245,7 @@ class _PlansTabState extends State<PlansTab> {
                           fontSize: 13,
                           color: isCompleted
                               ? Colors.green
-                              : txt.withOpacity(0.5),
+                              : txt.withValues(alpha: 0.5),
                         ),
                       ),
                     ],
@@ -254,7 +254,7 @@ class _PlansTabState extends State<PlansTab> {
                 Icon(
                   Icons.arrow_forward_ios,
                   size: 14,
-                  color: txt.withOpacity(0.3),
+                  color: txt.withValues(alpha: 0.3),
                 ),
               ],
             ),
@@ -266,7 +266,7 @@ class _PlansTabState extends State<PlansTab> {
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
                   value: progress,
-                  backgroundColor: txt.withOpacity(0.06),
+                  backgroundColor: txt.withValues(alpha: 0.06),
                   color: color,
                   minHeight: 6,
                 ),
@@ -284,7 +284,7 @@ class _PlansTabState extends State<PlansTab> {
                         'Próximo: $currentPassage',
                         style: TextStyle(
                           fontSize: 12,
-                          color: txt.withOpacity(0.6),
+                          color: txt.withValues(alpha: 0.6),
                           fontWeight: FontWeight.w500,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -309,9 +309,9 @@ class _PlansTabState extends State<PlansTab> {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: txt.withOpacity(0.03),
+          color: txt.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: txt.withOpacity(0.08)),
+          border: Border.all(color: txt.withValues(alpha: 0.08)),
         ),
         child: Row(
           children: [
@@ -319,7 +319,7 @@ class _PlansTabState extends State<PlansTab> {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(_getIconData(plan.icon), color: color, size: 22),
@@ -342,7 +342,7 @@ class _PlansTabState extends State<PlansTab> {
                     '${plan.totalDays} dias • ${plan.description}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 12, color: txt.withOpacity(0.5)),
+                    style: TextStyle(fontSize: 12, color: txt.withValues(alpha: 0.5)),
                   ),
                 ],
               ),
@@ -351,7 +351,7 @@ class _PlansTabState extends State<PlansTab> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(

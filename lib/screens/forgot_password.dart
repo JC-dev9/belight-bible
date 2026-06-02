@@ -110,7 +110,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           width: 80,
           height: 80,
           decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.1),
+            color: Colors.green.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: const Icon(Icons.mark_email_read_outlined, size: 40, color: Colors.green),
@@ -217,7 +217,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             onPressed: _isLoading ? null : _sendResetEmail,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.yellow.shade700,
-              disabledBackgroundColor: Colors.yellow.shade700.withOpacity(0.5),
+              disabledBackgroundColor: Colors.yellow.shade700.withValues(alpha: 0.5),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),

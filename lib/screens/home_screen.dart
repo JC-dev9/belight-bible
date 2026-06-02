@@ -174,7 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
               height: 70,
               elevation: 0,
               backgroundColor: color,
-              indicatorColor: primaryColor.withOpacity(0.15),
+              indicatorColor: primaryColor.withValues(alpha: 0.15),
               destinations: const [
                 NavigationDestination(
                   icon: Icon(Icons.home_outlined),

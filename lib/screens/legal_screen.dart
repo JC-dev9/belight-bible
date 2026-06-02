@@ -62,7 +62,7 @@ class LegalScreen extends StatelessWidget {
             width: 1,
           ),
           blockquoteDecoration: BoxDecoration(
-            color: isDark ? Colors.yellow.shade900.withOpacity(0.2) : Colors.yellow.shade50,
+            color: isDark ? Colors.yellow.shade900.withValues(alpha: 0.2) : Colors.yellow.shade50,
             borderRadius: BorderRadius.circular(8),
             border: Border(
               left: BorderSide(color: Colors.yellow.shade700, width: 4),

@@ -53,7 +53,7 @@ class BibleSettingsSheet extends StatelessWidget {
       decoration: BoxDecoration(
         color: _getModalBg(),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10)],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10)],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -74,7 +74,7 @@ class BibleSettingsSheet extends StatelessWidget {
                   max: 30,
                   divisions: 18,
                   activeColor: _getActiveColor(),
-                  inactiveColor: _getModalText().withOpacity(0.2),
+                  inactiveColor: _getModalText().withValues(alpha: 0.2),
                   label: fontSize.round().toString(),
                   onChanged: onFontSizeChanged,
                 ),
@@ -118,7 +118,7 @@ class BibleSettingsSheet extends StatelessWidget {
                 width: isSelected ? 3 : 1,
               ),
               boxShadow: [
-                if (isSelected) BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8)
+                if (isSelected) BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8)
               ],
             ),
             child: Center(

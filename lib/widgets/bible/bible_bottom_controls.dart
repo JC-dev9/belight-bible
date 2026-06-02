@@ -30,7 +30,7 @@ class BibleBottomControls extends StatelessWidget {
         color: backgroundColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           )
@@ -50,7 +50,7 @@ class BibleBottomControls extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
               decoration: BoxDecoration(
-                color: textColor.withOpacity(0.08),
+                color: textColor.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(30),
               ),
               child: Text(

@@ -27,7 +27,7 @@ class HomeHeader extends StatelessWidget {
             style: TextStyle(
               fontSize: MediaQuery.of(context).size.width < 360 ? 20 : 26,
               fontWeight: FontWeight.w800,
-              color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.9),
+              color: Theme.of(context).textTheme.bodyLarge?.color?.withValues(alpha: 0.9),
               letterSpacing: -0.5,
             ),
             overflow: TextOverflow.ellipsis,

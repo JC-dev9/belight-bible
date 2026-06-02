@@ -119,11 +119,11 @@ class _BibleSearchScreenState extends State<BibleSearchScreen> {
           },
           decoration: InputDecoration(
             hintText: 'Pesquisar nos versículos...',
-            hintStyle: TextStyle(color: textColor.withOpacity(0.4)),
+            hintStyle: TextStyle(color: textColor.withValues(alpha: 0.4)),
             border: InputBorder.none,
             suffixIcon: _query.isNotEmpty
                 ? IconButton(
-                    icon: Icon(Icons.close, color: textColor.withOpacity(0.6)),
+                    icon: Icon(Icons.close, color: textColor.withValues(alpha: 0.6)),
                     onPressed: () {
                       _controller.clear();
                       _runSearch('');
@@ -152,7 +152,7 @@ class _BibleSearchScreenState extends State<BibleSearchScreen> {
           child: Text(
             'Nenhum versículo corresponde a "${_query.trim()}".',
             textAlign: TextAlign.center,
-            style: TextStyle(color: textColor.withOpacity(0.7)),
+            style: TextStyle(color: textColor.withValues(alpha: 0.7)),
           ),
         ),
       );
@@ -167,7 +167,7 @@ class _BibleSearchScreenState extends State<BibleSearchScreen> {
               Text(
                 '${_results.length} resultado${_results.length == 1 ? '' : 's'}',
                 style: TextStyle(
-                  color: textColor.withOpacity(0.6),
+                  color: textColor.withValues(alpha: 0.6),
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
@@ -181,7 +181,7 @@ class _BibleSearchScreenState extends State<BibleSearchScreen> {
             itemCount: _results.length,
             separatorBuilder: (_, __) => Divider(
               height: 1,
-              color: textColor.withOpacity(0.06),
+              color: textColor.withValues(alpha: 0.06),
               indent: 16,
               endIndent: 16,
             ),
@@ -208,12 +208,12 @@ class _BibleSearchScreenState extends State<BibleSearchScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.search, size: 56, color: textColor.withOpacity(0.25)),
+            Icon(Icons.search, size: 56, color: textColor.withValues(alpha: 0.25)),
             const SizedBox(height: 14),
             Text(
               'Escreva pelo menos 2 letras para pesquisar.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: textColor.withOpacity(0.55)),
+              style: TextStyle(color: textColor.withValues(alpha: 0.55)),
             ),
           ],
         ),
@@ -311,7 +311,7 @@ class _HighlightedText extends StatelessWidget {
         style: TextStyle(
           color: accent,
           fontWeight: FontWeight.bold,
-          backgroundColor: accent.withOpacity(0.12),
+          backgroundColor: accent.withValues(alpha: 0.12),
         ),
       ));
       i = end;

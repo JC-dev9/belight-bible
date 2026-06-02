@@ -90,8 +90,8 @@ class VerseList extends StatelessWidget {
           final bool isDimmed = focusedVerseIndex != null && !isFocused;
 
           final double opacity = isDimmed ? 0.3 : 1.0;
-          final Color textColorWithFocus = baseTextColor.withOpacity(
-            isDimmed ? 0.3 : 1.0,
+          final Color textColorWithFocus = baseTextColor.withValues(
+            alpha: isDimmed ? 0.3 : 1.0,
           );
 
           return RepaintBoundary(
@@ -104,8 +104,8 @@ class VerseList extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 decoration: BoxDecoration(
                   color: (highlightColor != null && isBlock)
-                      ? highlightColor.withOpacity(
-                          isDimmed
+                      ? highlightColor.withValues(
+                          alpha: isDimmed
                               ? 0.1
                               : (currentTheme == ReadingTheme.dark ? 0.3 : 0.4),
                         )
@@ -114,7 +114,7 @@ class VerseList extends StatelessWidget {
                   border: Border(
                     left: hasNote
                         ? BorderSide(
-                            color: activeColor.withOpacity(opacity),
+                            color: activeColor.withValues(alpha: opacity),
                             width: 3,
                           )
                         : BorderSide.none,
@@ -136,7 +136,7 @@ class VerseList extends StatelessWidget {
                           color: textColorWithFocus,
                           fontFamily: 'Georgia',
                           backgroundColor: (highlightColor != null && isText)
-                              ? highlightColor.withOpacity(isDimmed ? 0.1 : 0.5)
+                              ? highlightColor.withValues(alpha: isDimmed ? 0.1 : 0.5)
                               : null,
                         ),
                         children: [
@@ -148,7 +148,7 @@ class VerseList extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: fontSize * 0.6,
                                   fontWeight: FontWeight.bold,
-                                  color: verseNumColor.withOpacity(opacity),
+                                  color: verseNumColor.withValues(alpha: opacity),
                                 ),
                               ),
                             ),
@@ -180,7 +180,7 @@ class VerseList extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: baseTextColor.withOpacity(0.7),
+                                    color: baseTextColor.withValues(alpha: 0.7),
                                     fontStyle: FontStyle.italic,
                                   ),
                                 ),

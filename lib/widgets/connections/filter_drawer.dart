@@ -98,7 +98,7 @@ class FilterDrawer extends ConsumerWidget {
                           onSelected: (_) {
                             notifier.toggleNodeTypeFilter(type);
                           },
-                          selectedColor: type.color.withOpacity(0.2),
+                          selectedColor: type.color.withValues(alpha: 0.2),
                           checkmarkColor: type.color,
                         );
                       }).toList(),
@@ -132,7 +132,7 @@ class FilterDrawer extends ConsumerWidget {
                             onSelected: (_) {
                               notifier.togglePeriodFilter(period);
                             },
-                            selectedColor: Colors.blue.withOpacity(0.2),
+                            selectedColor: Colors.blue.withValues(alpha: 0.2),
                             checkmarkColor: Colors.blue,
                           );
                         }).toList(),
@@ -144,7 +144,7 @@ class FilterDrawer extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: theme.primaryColor.withOpacity(0.1),
+                        color: theme.primaryColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Column(

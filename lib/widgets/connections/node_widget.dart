@@ -91,8 +91,8 @@ class _NodeWidgetState extends State<NodeWidget> with SingleTickerProviderStateM
                     boxShadow: [
                       BoxShadow(
                         color: widget.isSelected 
-                            ? nodeColor.withOpacity(0.6)
-                            : Colors.black.withOpacity(0.2),
+                            ? nodeColor.withValues(alpha: 0.6)
+                            : Colors.black.withValues(alpha: 0.2),
                         blurRadius: widget.isSelected ? 16 : 8,
                         spreadRadius: widget.isSelected ? 2 : 0,
                       ),
