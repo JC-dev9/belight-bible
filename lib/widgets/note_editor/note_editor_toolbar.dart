@@ -58,7 +58,7 @@ class _NoteEditorToolbarState extends State<NoteEditorToolbar> {
   @override
   Widget build(BuildContext context) {
     // Surface color for elements is derived from accent color
-    final surfaceColor = widget.accentColor.withOpacity(0.08); 
+    final surfaceColor = widget.accentColor.withValues(alpha: 0.08); 
     
     return Padding(
       padding: EdgeInsets.only(
@@ -73,12 +73,12 @@ class _NoteEditorToolbarState extends State<NoteEditorToolbar> {
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 20,
               offset: const Offset(0, 10),
             )
           ],
-          border: Border.all(color: widget.textColor.withOpacity(0.05)),
+          border: Border.all(color: widget.textColor.withValues(alpha: 0.05)),
         ),
         child: ClipRRect(
            borderRadius: BorderRadius.circular(30),
@@ -93,7 +93,7 @@ class _NoteEditorToolbarState extends State<NoteEditorToolbar> {
       margin: const EdgeInsets.symmetric(horizontal: 8),
       width: 1, 
       height: 20, 
-      color: toolbarItemsColor.withOpacity(0.2)
+      color: toolbarItemsColor.withValues(alpha: 0.2)
     );
 
     switch (widget.toolbarMode) {
@@ -105,7 +105,7 @@ class _NoteEditorToolbarState extends State<NoteEditorToolbar> {
                onPressed: () => widget.onModeChanged(EditorToolbarMode.none),
                color: toolbarItemsColor,
             ),
-            Container(width: 1, height: 24, color: toolbarItemsColor.withOpacity(0.1)),
+            Container(width: 1, height: 24, color: toolbarItemsColor.withValues(alpha: 0.1)),
             Expanded(
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -147,7 +147,7 @@ class _NoteEditorToolbarState extends State<NoteEditorToolbar> {
                onPressed: () => widget.onModeChanged(EditorToolbarMode.none),
                color: toolbarItemsColor,
             ),
-            Container(width: 1, height: 24, color: toolbarItemsColor.withOpacity(0.1)),
+            Container(width: 1, height: 24, color: toolbarItemsColor.withValues(alpha: 0.1)),
             Expanded(
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -172,7 +172,7 @@ class _NoteEditorToolbarState extends State<NoteEditorToolbar> {
                           ),
                         ),
                         child: isDefault 
-                          ? Icon(Icons.format_color_reset, size: 16, color: widget.textColor.withOpacity(0.5))
+                          ? Icon(Icons.format_color_reset, size: 16, color: widget.textColor.withValues(alpha: 0.5))
                           : (isSelected 
                               ? Icon(Icons.check, size: 16, color: Colors.black54)
                               : null),
@@ -185,7 +185,6 @@ class _NoteEditorToolbarState extends State<NoteEditorToolbar> {
           ],
         );
       case EditorToolbarMode.none:
-      default:
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           child: Row(

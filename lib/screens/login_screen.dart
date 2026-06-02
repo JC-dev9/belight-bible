@@ -3,10 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
-
 import '../main.dart' show HiveKeys;
-import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -228,7 +225,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: _isLoading ? null : _handleEmailLogin,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.yellow.shade700,
-                      disabledBackgroundColor: Colors.yellow.shade700.withOpacity(0.5),
+                      disabledBackgroundColor: Colors.yellow.shade700.withValues(alpha: 0.5),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),

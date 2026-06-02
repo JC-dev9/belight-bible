@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../utils/theme.dart';
 import '../../data/bible_repository.dart';
 
 class BibleModals {
@@ -83,11 +82,11 @@ class BibleModals {
                       decoration: BoxDecoration(
                         color: isSelected
                             ? activeColor
-                            : textColor.withOpacity(0.05),
+                            : textColor.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(10),
                         border: isSelected
                             ? null
-                            : Border.all(color: textColor.withOpacity(0.1)),
+                            : Border.all(color: textColor.withValues(alpha: 0.1)),
                       ),
                       child: Center(
                         child: Text(
@@ -258,7 +257,7 @@ class _VersionSelectorSheetState extends State<_VersionSelectorSheet> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: widget.textColor.withOpacity(0.25),
+              color: widget.textColor.withValues(alpha: 0.25),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -320,7 +319,7 @@ class _VersionSelectorSheetState extends State<_VersionSelectorSheet> {
           fontSize: 11,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.1,
-          color: widget.textColor.withOpacity(0.45),
+          color: widget.textColor.withValues(alpha: 0.45),
         ),
       ),
     );
@@ -336,12 +335,12 @@ class _VersionSelectorSheetState extends State<_VersionSelectorSheet> {
         title: Text('Apagar $name?', style: TextStyle(color: widget.textColor, fontSize: 16)),
         content: Text(
           'O ficheiro será removido do dispositivo.\nPodes voltar a baixar a qualquer momento.',
-          style: TextStyle(color: widget.textColor.withOpacity(0.7), fontSize: 14),
+          style: TextStyle(color: widget.textColor.withValues(alpha: 0.7), fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancelar', style: TextStyle(color: widget.textColor.withOpacity(0.5))),
+            child: Text('Cancelar', style: TextStyle(color: widget.textColor.withValues(alpha: 0.5))),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -385,14 +384,14 @@ class _VersionSelectorSheetState extends State<_VersionSelectorSheet> {
                 child: Icon(
                   Icons.delete_outline_rounded,
                   size: 20,
-                  color: widget.textColor.withOpacity(0.35),
+                  color: widget.textColor.withValues(alpha: 0.35),
                 ),
               ),
             ),
           isSelected
               ? Icon(Icons.check_circle_rounded, color: widget.activeColor, size: 22)
               : Icon(Icons.circle_outlined,
-                  color: widget.textColor.withOpacity(0.25), size: 22),
+                  color: widget.textColor.withValues(alpha: 0.25), size: 22),
         ],
       ),
       onTap: () {
@@ -430,7 +429,7 @@ class _VersionSelectorSheetState extends State<_VersionSelectorSheet> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: widget.activeColor.withOpacity(0.12),
+                    color: widget.activeColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -453,7 +452,7 @@ class _VersionSelectorSheetState extends State<_VersionSelectorSheet> {
           onTap: isDownloading ? null : () => _startDownload(code),
         ),
 
-        if (isDownloading && progress != null)
+        if (isDownloading)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Column(
@@ -463,7 +462,7 @@ class _VersionSelectorSheetState extends State<_VersionSelectorSheet> {
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
                     value: progress,
-                    backgroundColor: widget.textColor.withOpacity(0.08),
+                    backgroundColor: widget.textColor.withValues(alpha: 0.08),
                     color: widget.activeColor,
                     minHeight: 4,
                   ),
@@ -473,7 +472,7 @@ class _VersionSelectorSheetState extends State<_VersionSelectorSheet> {
                   '${(progress * 100).toStringAsFixed(0)}%',
                   style: TextStyle(
                     fontSize: 11,
-                    color: widget.textColor.withOpacity(0.5),
+                    color: widget.textColor.withValues(alpha: 0.5),
                   ),
                 ),
               ],
@@ -531,13 +530,13 @@ class _VersionTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected
-              ? activeColor.withOpacity(0.08)
-              : textColor.withOpacity(0.04),
+              ? activeColor.withValues(alpha: 0.08)
+              : textColor.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
-                ? activeColor.withOpacity(0.4)
-                : textColor.withOpacity(0.08),
+                ? activeColor.withValues(alpha: 0.4)
+                : textColor.withValues(alpha: 0.08),
           ),
         ),
         child: Row(
@@ -546,8 +545,8 @@ class _VersionTile extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? activeColor.withOpacity(0.15)
-                    : textColor.withOpacity(0.07),
+                    ? activeColor.withValues(alpha: 0.15)
+                    : textColor.withValues(alpha: 0.07),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
@@ -555,7 +554,7 @@ class _VersionTile extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: isSelected ? activeColor : textColor.withOpacity(0.6),
+                  color: isSelected ? activeColor : textColor.withValues(alpha: 0.6),
                   letterSpacing: 0.5,
                 ),
               ),
@@ -656,7 +655,7 @@ class _BookChapterVersePickerState extends State<_BookChapterVersePicker> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: widget.textColor.withOpacity(0.3),
+                color: widget.textColor.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -694,9 +693,9 @@ class _BookChapterVersePickerState extends State<_BookChapterVersePicker> {
                     },
                     child: Container(
                       decoration: BoxDecoration(
-                        color: widget.textColor.withOpacity(0.05),
+                        color: widget.textColor.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: widget.textColor.withOpacity(0.1)),
+                        border: Border.all(color: widget.textColor.withValues(alpha: 0.1)),
                       ),
                       child: Center(
                         child: Text(
@@ -744,7 +743,7 @@ class _BookChapterVersePickerState extends State<_BookChapterVersePicker> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: widget.textColor.withOpacity(0.3),
+                color: widget.textColor.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -769,10 +768,10 @@ class _BookChapterVersePickerState extends State<_BookChapterVersePicker> {
                 style: TextStyle(color: widget.textColor),
                 decoration: InputDecoration(
                   hintText: 'Buscar livro...',
-                  hintStyle: TextStyle(color: widget.textColor.withOpacity(0.4)),
-                  prefixIcon: Icon(Icons.search, color: widget.textColor.withOpacity(0.5)),
+                  hintStyle: TextStyle(color: widget.textColor.withValues(alpha: 0.4)),
+                  prefixIcon: Icon(Icons.search, color: widget.textColor.withValues(alpha: 0.5)),
                   filled: true,
-                  fillColor: widget.textColor.withOpacity(0.05),
+                  fillColor: widget.textColor.withValues(alpha: 0.05),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -832,7 +831,7 @@ class _BookChapterVersePickerState extends State<_BookChapterVersePicker> {
                               duration: const Duration(milliseconds: 200),
                               child: Icon(
                                 Icons.keyboard_arrow_down,
-                                color: widget.textColor.withOpacity(0.5),
+                                color: widget.textColor.withValues(alpha: 0.5),
                               ),
                             ),
                           ],
@@ -867,10 +866,10 @@ class _BookChapterVersePickerState extends State<_BookChapterVersePicker> {
                                       onTap: () => _onChapterTap(book, chapter),
                                       child: Container(
                                         decoration: BoxDecoration(
-                                          color: widget.activeColor.withOpacity(0.1),
+                                          color: widget.activeColor.withValues(alpha: 0.1),
                                           borderRadius: BorderRadius.circular(10),
                                           border: Border.all(
-                                            color: widget.activeColor.withOpacity(0.3),
+                                            color: widget.activeColor.withValues(alpha: 0.3),
                                           ),
                                         ),
                                         child: Center(
@@ -897,7 +896,7 @@ class _BookChapterVersePickerState extends State<_BookChapterVersePicker> {
                           height: 1,
                           indent: 16,
                           endIndent: 16,
-                          color: widget.textColor.withOpacity(0.06),
+                          color: widget.textColor.withValues(alpha: 0.06),
                         ),
                     ],
                   );

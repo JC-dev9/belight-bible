@@ -89,7 +89,7 @@ class NodeDetailSheet extends ConsumerWidget {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: node.type.color.withOpacity(0.2),
+                                      color: node.type.color.withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Text(
@@ -208,7 +208,7 @@ class NodeDetailSheet extends ConsumerWidget {
                             leading: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: otherNode.type.color.withOpacity(0.2),
+                                color: otherNode.type.color.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Icon(
@@ -237,8 +237,8 @@ class NodeDetailSheet extends ConsumerWidget {
                             isThreeLine: true,
                           ),
                         );
-                      }).toList(),
-                    
+                      }),
+
                     const SizedBox(height: 80), // Espaço no final
                   ],
                 ),

@@ -105,7 +105,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     Navigator.pop(context, {
       'title': title,
       'content': content,
-      'color': _customBackgroundColor?.value,
+      'color': _customBackgroundColor?.toARGB32(),
     });
   }
 
@@ -130,8 +130,8 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     
     // Auto-contrast text color
     final Color effectiveTextColor = isCustomColor ? Colors.black87 : widget.textColor;
-    final Color effectiveHintColor = isCustomColor ? Colors.black38 : widget.textColor.withOpacity(0.4);
-    final surfaceColor = widget.accentColor.withOpacity(0.08);
+    final Color effectiveHintColor = isCustomColor ? Colors.black38 : widget.textColor.withValues(alpha: 0.4);
+    final surfaceColor = widget.accentColor.withValues(alpha: 0.08);
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -191,7 +191,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
                       verseNumber: widget.verseNumber,
                       verseText: widget.verseText,
                       accentColor: widget.accentColor,
-                      backgroundColor: isCustomColor ? Colors.white.withOpacity(0.5) : surfaceColor,
+                      backgroundColor: isCustomColor ? Colors.white.withValues(alpha: 0.5) : surfaceColor,
                       textColor: effectiveTextColor,
                    ),
                   const SizedBox(height: 24),

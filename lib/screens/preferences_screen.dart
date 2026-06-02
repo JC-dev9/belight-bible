@@ -168,7 +168,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                 SwitchListTile(
                   value: _dailyVerseEnabled,
                   onChanged: _toggleDailyVerse,
-                  activeColor: accent,
+                  activeThumbColor: accent,
                   title: const Text(
                     'Versículo do dia',
                     style: TextStyle(fontWeight: FontWeight.w600),
@@ -180,7 +180,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                   secondary: Icon(Icons.notifications_outlined,
                       color: _dailyVerseEnabled ? accent : theme.hintColor),
                 ),
-                Divider(height: 1, color: theme.dividerColor.withOpacity(0.2)),
+                Divider(height: 1, color: theme.dividerColor.withValues(alpha: 0.2)),
                 ListTile(
                   enabled: _dailyVerseEnabled,
                   leading: Icon(
@@ -282,10 +282,10 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? accent.withOpacity(0.08) : theme.cardColor,
+          color: isSelected ? accent.withValues(alpha: 0.08) : theme.cardColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? accent : theme.dividerColor.withOpacity(0.2),
+            color: isSelected ? accent : theme.dividerColor.withValues(alpha: 0.2),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -295,8 +295,8 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? accent.withOpacity(0.15)
-                    : theme.hintColor.withOpacity(0.08),
+                    ? accent.withValues(alpha: 0.15)
+                    : theme.hintColor.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
@@ -333,7 +333,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
               Icon(Icons.check_circle, color: accent, size: 22)
             else
               Icon(Icons.circle_outlined,
-                  color: theme.hintColor.withOpacity(0.3), size: 22),
+                  color: theme.hintColor.withValues(alpha: 0.3), size: 22),
           ],
         ),
       ),

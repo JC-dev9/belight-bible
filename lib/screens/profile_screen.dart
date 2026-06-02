@@ -16,7 +16,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final SupabaseService _service = SupabaseService();
   final TextEditingController _nameController = TextEditingController();
   
-  UserProfile? _profile;
   int _highlightCount = 0;
   int _noteCount = 0;
   int _streak = 0;
@@ -47,7 +46,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final profile = results[0] as UserProfile?;
       final progress = results[3] as ReadingProgress?;
       setState(() {
-        _profile = profile;
         _highlightCount = results[1] as int;
         _noteCount = results[2] as int;
         _streak = progress?.currentStreak ?? 0;
@@ -246,7 +244,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: (stat['color'] as Color).withOpacity(0.1),
+            color: (stat['color'] as Color).withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(stat['icon'] as IconData, color: stat['color'], size: 28),

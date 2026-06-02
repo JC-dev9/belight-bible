@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:graphview/GraphView.dart';
 import '../../providers/connections_provider.dart';
-import '../../data/models/bible_node.dart';
-import '../../data/models/node_connection.dart';
 import 'node_widget.dart';
 import 'node_detail_sheet.dart';
 

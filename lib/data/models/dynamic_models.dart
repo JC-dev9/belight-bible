@@ -1,5 +1,5 @@
-/// Modelos para dados dinâmicos do Supabase.
-/// Cada classe corresponde a uma tabela no banco de dados.
+// Modelos para dados dinâmicos do Supabase.
+// Cada classe corresponde a uma tabela no banco de dados.
 
 /// Perfil do utilizador — tabela `profiles`
 class UserProfile {

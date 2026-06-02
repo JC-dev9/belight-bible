@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'bible_types.dart';
-import '../../utils/theme.dart';
 
 class SelectionPanel extends StatefulWidget {
   final Color backgroundColor;
@@ -62,7 +60,7 @@ class _SelectionPanelState extends State<SelectionPanel> {
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.15),
+                color: Colors.black.withValues(alpha: 0.15),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               )
@@ -81,7 +79,7 @@ class _SelectionPanelState extends State<SelectionPanel> {
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: widget.textColor.withOpacity(0.05),
+                        color: widget.textColor.withValues(alpha: 0.05),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(Icons.close, size: 20, color: widget.textColor),
@@ -99,7 +97,7 @@ class _SelectionPanelState extends State<SelectionPanel> {
                           colors: [
                             Colors.white,
                             Colors.white,
-                            Colors.white.withOpacity(0.05)
+                            Colors.white.withValues(alpha: 0.05)
                           ],
                           stops: const [0.0, 0.85, 1.0],
                           tileMode: TileMode.mirror,
@@ -121,7 +119,7 @@ class _SelectionPanelState extends State<SelectionPanel> {
                                 padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: widget.textColor.withOpacity(0.2)),
+                                  border: Border.all(color: widget.textColor.withValues(alpha: 0.2)),
                                 ),
                                 child: Icon(Icons.format_color_reset, size: 18, color: widget.textColor),
                               ),
@@ -156,7 +154,7 @@ class _SelectionPanelState extends State<SelectionPanel> {
                                   ),
                                 ),
                               );
-                            }).toList(),
+                            }),
 
                             // Seletor Avançado
                             GestureDetector(
@@ -166,7 +164,7 @@ class _SelectionPanelState extends State<SelectionPanel> {
                                   height: 32,
                                   decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      border: Border.all(color: widget.textColor.withOpacity(0.2)),
+                                      border: Border.all(color: widget.textColor.withValues(alpha: 0.2)),
                                       gradient: const SweepGradient(colors: [
                                         Colors.red,
                                         Colors.yellow,
@@ -200,7 +198,7 @@ class _SelectionPanelState extends State<SelectionPanel> {
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: widget.textColor.withOpacity(0.05),
+                        color: widget.textColor.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
@@ -216,7 +214,7 @@ class _SelectionPanelState extends State<SelectionPanel> {
               ),
 
               const SizedBox(height: 12),
-              Divider(height: 1, color: widget.textColor.withOpacity(0.05)),
+              Divider(height: 1, color: widget.textColor.withValues(alpha: 0.05)),
               const SizedBox(height: 12),
 
               // Linha 2: Ações
@@ -247,7 +245,7 @@ class _SelectionPanelState extends State<SelectionPanel> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: textColor.withOpacity(0.05),
+                color: textColor.withValues(alpha: 0.05),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: textColor, size: 24),

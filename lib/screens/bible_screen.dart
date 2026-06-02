@@ -418,7 +418,7 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
       for (var i in _selectedVerses) {
         _verses[i]['highlighted'] = color;
         _verses[i]['highlight_type'] = highlightType;
-        final dbColor = color.value.toSigned(32);
+        final dbColor = color.toARGB32().toSigned(32);
         final verseNum = _verses[i]['number'] as int;
 
         _supabaseService.saveHighlight(
@@ -641,7 +641,7 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
   // Pré-computado uma vez — evita recriar a lista em cada abertura do picker
   static final List<Color> _colorPresets = [
     ...Colors.primaries.map((c) => c.shade200),
-    ...Colors.accents.map((c) => c.withOpacity(0.5)),
+    ...Colors.accents.map((c) => c.withValues(alpha: 0.5)),
   ];
 
   void _showAdvancedColorPicker(BuildContext context) {
@@ -677,8 +677,8 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
                 decoration: BoxDecoration(
                   color:
                       (_selectedHighlightStyle == HighlightStyle.fundoVersiculo)
-                      ? tempColor.withOpacity(
-                          widget.currentTheme == ReadingTheme.dark ? 0.3 : 0.4,
+                      ? tempColor.withValues(
+                          alpha: widget.currentTheme == ReadingTheme.dark ? 0.3 : 0.4,
                         )
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
@@ -694,7 +694,7 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
                     fontStyle: FontStyle.italic,
                     backgroundColor:
                         (_selectedHighlightStyle == HighlightStyle.fundoTexto)
-                        ? tempColor.withOpacity(0.5)
+                        ? tempColor.withValues(alpha: 0.5)
                         : null,
                   ),
                 ),
@@ -889,7 +889,7 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
                           _verses[i]['highlighted'] as Color?;
                       if (existingColor == null) continue;
                       final verseNum = _verses[i]['number'] as int;
-                      final dbColor = existingColor.value.toSigned(32);
+                      final dbColor = existingColor.toARGB32().toSigned(32);
                       _verses[i]['highlight_type'] = highlightType;
                       _supabaseService.saveHighlight(Highlight(
                         book: _selectedBook,
@@ -958,7 +958,7 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.wifi_off, size: 64, color: textColor.withOpacity(0.3)),
+          Icon(Icons.wifi_off, size: 64, color: textColor.withValues(alpha: 0.3)),
           const SizedBox(height: 16),
           Text(
             'Não foi possível carregar os dados.',

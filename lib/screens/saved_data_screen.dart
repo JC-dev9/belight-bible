@@ -84,13 +84,13 @@ class SavedDataScreenState extends State<SavedDataScreen>
             title: Text('Apagar $itemType?', style: TextStyle(color: txt)),
             content: Text(
               'Esta ação não pode ser desfeita imediatamente.',
-              style: TextStyle(color: txt.withOpacity(0.8)),
+              style: TextStyle(color: txt.withValues(alpha: 0.8)),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
                 child: Text('Cancelar',
-                    style: TextStyle(color: txt.withOpacity(0.6))),
+                    style: TextStyle(color: txt.withValues(alpha: 0.6))),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
@@ -102,54 +102,6 @@ class SavedDataScreenState extends State<SavedDataScreen>
           ),
         ) ??
         false;
-  }
-
-  Future<void> _deleteHighlight(int index) async {
-    final item = _highlights[index];
-    final confirmed = await _confirmDelete('Destaque');
-    if (!confirmed) return;
-    setState(() => _highlights.removeAt(index));
-    await _supabaseService.removeHighlight(item.book, item.chapter, item.verse);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Destaque removido'),
-          action: SnackBarAction(
-            label: 'Desfazer',
-            onPressed: () async {
-              await _supabaseService.saveHighlight(item);
-              _loadData();
-              widget.onDataChanged?.call();
-            },
-          ),
-        ),
-      );
-    }
-    widget.onDataChanged?.call();
-  }
-
-  Future<void> _deleteNote(int index) async {
-    final item = _notes[index];
-    final confirmed = await _confirmDelete('Anotação');
-    if (!confirmed) return;
-    setState(() => _notes.removeAt(index));
-    await _supabaseService.deleteNote(item.book, item.chapter, item.verse);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Anotação removida'),
-          action: SnackBarAction(
-            label: 'Desfazer',
-            onPressed: () async {
-              await _supabaseService.saveNote(item);
-              _loadData();
-              widget.onDataChanged?.call();
-            },
-          ),
-        ),
-      );
-    }
-    widget.onDataChanged?.call();
   }
 
   // --- EDIT NOTE ---
@@ -253,9 +205,9 @@ class SavedDataScreenState extends State<SavedDataScreen>
         bottom: TabBar(
           controller: _tabController,
           labelColor: _accentColor,
-          unselectedLabelColor: txt.withOpacity(0.5),
+          unselectedLabelColor: txt.withValues(alpha: 0.5),
           indicatorColor: _accentColor,
-          dividerColor: txt.withOpacity(0.1),
+          dividerColor: txt.withValues(alpha: 0.1),
           tabs: const [
             Tab(text: "Destaques"),
             Tab(text: "Anotações"),
@@ -306,7 +258,7 @@ class SavedDataScreenState extends State<SavedDataScreen>
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: txt.withOpacity(0.05),
+                color: txt.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
                 border: Border(left: BorderSide(color: color, width: 6)),
               ),
@@ -328,14 +280,14 @@ class SavedDataScreenState extends State<SavedDataScreen>
                         Text(
                           'Grifo ${item.type == 'block' ? 'em bloco' : 'de texto'}',
                           style: TextStyle(
-                            color: txt.withOpacity(0.6),
+                            color: txt.withValues(alpha: 0.6),
                             fontSize: 12,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  Icon(Icons.arrow_forward_ios, size: 14, color: txt.withOpacity(0.3)),
+                  Icon(Icons.arrow_forward_ios, size: 14, color: txt.withValues(alpha: 0.3)),
                 ],
               ),
             ),
@@ -395,9 +347,9 @@ class SavedDataScreenState extends State<SavedDataScreen>
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: txt.withOpacity(0.05),
+                color: txt.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: txt.withOpacity(0.1)),
+                border: Border.all(color: txt.withValues(alpha: 0.1)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -426,13 +378,13 @@ class SavedDataScreenState extends State<SavedDataScreen>
                           child: Icon(
                             Icons.ios_share_rounded,
                             size: 16,
-                            color: txt.withOpacity(0.4),
+                            color: txt.withValues(alpha: 0.4),
                           ),
                         ),
                       ),
                       const SizedBox(width: 4),
                       Icon(Icons.arrow_forward_ios,
-                          size: 12, color: txt.withOpacity(0.3)),
+                          size: 12, color: txt.withValues(alpha: 0.3)),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -452,7 +404,7 @@ class SavedDataScreenState extends State<SavedDataScreen>
                   Text(
                     note.previewText,
                     style: TextStyle(
-                      color: txt.withOpacity(0.8),
+                      color: txt.withValues(alpha: 0.8),
                       fontSize: 14,
                       height: 1.5,
                     ),
@@ -463,7 +415,7 @@ class SavedDataScreenState extends State<SavedDataScreen>
                   Text(
                     "Editado em ${_formatDate(note.updatedAt)}",
                     style: TextStyle(
-                      color: txt.withOpacity(0.4),
+                      color: txt.withValues(alpha: 0.4),
                       fontSize: 11,
                     ),
                   ),
@@ -502,9 +454,9 @@ class SavedDataScreenState extends State<SavedDataScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.inbox, size: 48, color: txt.withOpacity(0.2)),
+          Icon(Icons.inbox, size: 48, color: txt.withValues(alpha: 0.2)),
           const SizedBox(height: 16),
-          Text(msg, style: TextStyle(color: txt.withOpacity(0.5))),
+          Text(msg, style: TextStyle(color: txt.withValues(alpha: 0.5))),
         ],
       ),
     );
@@ -542,9 +494,10 @@ class SavedDataScreenState extends State<SavedDataScreen>
           onDismissed: (_) async {
             final removed = _savedDevotionals.removeAt(index);
             setState(() {});
+            final messenger = ScaffoldMessenger.of(context);
             await _supabaseService.unsaveDevotional(removed.id);
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
+              messenger.showSnackBar(
                 SnackBar(
                   content: const Text('Devocional removido dos salvos'),
                   action: SnackBarAction(
@@ -577,9 +530,9 @@ class SavedDataScreenState extends State<SavedDataScreen>
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: txt.withOpacity(0.05),
+                color: txt.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: txt.withOpacity(0.1)),
+                border: Border.all(color: txt.withValues(alpha: 0.1)),
               ),
               child: Row(
                 children: [
@@ -587,7 +540,7 @@ class SavedDataScreenState extends State<SavedDataScreen>
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: Colors.brown.withOpacity(0.1),
+                      color: Colors.brown.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(Icons.coffee,
@@ -612,7 +565,7 @@ class SavedDataScreenState extends State<SavedDataScreen>
                         Text(
                           '${_formatDate(devotional.publishDate)} • ${devotional.readingTimeMin} min',
                           style: TextStyle(
-                            color: txt.withOpacity(0.5),
+                            color: txt.withValues(alpha: 0.5),
                             fontSize: 12,
                           ),
                         ),
@@ -620,7 +573,7 @@ class SavedDataScreenState extends State<SavedDataScreen>
                     ),
                   ),
                   Icon(Icons.arrow_forward_ios,
-                      size: 14, color: txt.withOpacity(0.3)),
+                      size: 14, color: txt.withValues(alpha: 0.3)),
                 ],
               ),
             ),
