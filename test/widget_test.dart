@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:bibleapp/data/models/node_type.dart';
-import 'package:bibleapp/data/models/bible_node.dart';
-import 'package:bibleapp/data/models/node_connection.dart';
-import 'package:bibleapp/data/models/connection_type.dart';
-import 'package:bibleapp/providers/connections_provider.dart';
+import 'package:belight_bible/data/models/node_type.dart';
+import 'package:belight_bible/data/models/bible_node.dart';
+import 'package:belight_bible/data/models/node_connection.dart';
+import 'package:belight_bible/data/models/connection_type.dart';
+import 'package:belight_bible/providers/connections_provider.dart';
 
 void main() {
   group('ConnectionsState — filteredNodes', () {

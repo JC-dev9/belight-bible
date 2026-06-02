@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:bibleapp/providers/connections_provider.dart';
-import 'package:bibleapp/data/models/node_type.dart';
+import 'package:belight_bible/providers/connections_provider.dart';
+import 'package:belight_bible/data/models/node_type.dart';
 
 void main() {
   group('ConnectionsNotifier', () {
