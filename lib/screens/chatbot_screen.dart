@@ -56,12 +56,29 @@ class ChatBotScreenState extends State<ChatBotScreen> {
   // Activado quando uma edição altera mensagens já gravadas: força reescrita.
   bool _needsFullResync = false;
 
-  static const _suggestions = [
-    '🙏 O que a Bíblia diz sobre ansiedade?',
-    '📖 Explique o Salmos 23',
-    '💡 Como ter mais fé no dia a dia?',
-    '❤️ Versículos sobre amor',
+  static const _suggestions = <({IconData icon, String text})>[
+    (icon: Icons.self_improvement_rounded, text: 'O que a Bíblia diz sobre ansiedade?'),
+    (icon: Icons.menu_book_rounded, text: 'Explique o Salmos 23'),
+    (icon: Icons.local_fire_department_rounded, text: 'Como ter mais fé no dia a dia?'),
+    (icon: Icons.favorite_rounded, text: 'Versículos sobre amor'),
   ];
+
+  // Cor de marca usada em todo o chat (amarelo sólido, sem gradientes).
+  Color get _accent => Colors.yellow.shade700;
+
+  /// Tempo relativo legível para o histórico ("agora", "há 2 h", "ontem"…).
+  String _relativeTime(DateTime? dt) {
+    if (dt == null) return '';
+    final local = dt.toLocal();
+    final diff = DateTime.now().difference(local);
+    if (diff.inMinutes < 1) return 'agora';
+    if (diff.inMinutes < 60) return 'há ${diff.inMinutes} min';
+    if (diff.inHours < 24) return 'há ${diff.inHours} h';
+    if (diff.inDays == 1) return 'ontem';
+    if (diff.inDays < 7) return 'há ${diff.inDays} dias';
+    final d = local;
+    return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+  }
 
   @override
   void initState() {
@@ -108,18 +125,19 @@ class ChatBotScreenState extends State<ChatBotScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Chat Bíblico', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text('Chat Bíblico',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.history),
+            icon: const Icon(Icons.history_rounded),
             tooltip: 'Conversas',
             onPressed: _openHistory,
           ),
           IconButton(
-            icon: const Icon(Icons.edit_square),
+            icon: const Icon(Icons.add_comment_rounded),
             tooltip: 'Nova conversa',
             onPressed: _messages.isEmpty ? null : _startNewConversation,
           ),
@@ -163,7 +181,7 @@ class ChatBotScreenState extends State<ChatBotScreen> {
               Row(
                 children: [
                   const SizedBox(width: 8),
-                  Icon(Icons.auto_awesome, size: 18, color: Colors.yellow.shade700),
+                  Icon(Icons.auto_awesome, size: 18, color: _accent),
                   const SizedBox(width: 8),
                   Text(
                     'Estudo com IA',
@@ -174,11 +192,19 @@ class ChatBotScreenState extends State<ChatBotScreen> {
                     ),
                   ),
                   const Spacer(),
+                  if (_messages.isNotEmpty)
+                    IconButton(
+                      onPressed: _startNewConversation,
+                      icon: const Icon(Icons.add_comment_rounded, size: 20),
+                      tooltip: 'Nova conversa',
+                      color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                      visualDensity: VisualDensity.compact,
+                    ),
                   TextButton.icon(
                     onPressed: widget.onOpenFull,
-                    icon: const Icon(Icons.open_in_full, size: 16),
+                    icon: const Icon(Icons.open_in_full_rounded, size: 16),
                     label: const Text('Abrir completo'),
-                    style: TextButton.styleFrom(foregroundColor: Colors.yellow.shade800),
+                    style: TextButton.styleFrom(foregroundColor: _accent),
                   ),
                 ],
               ),
@@ -209,11 +235,11 @@ class ChatBotScreenState extends State<ChatBotScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 32),
+          const SizedBox(height: 36),
           Text(
             'Olá, $greetName',
             style: TextStyle(
-              fontSize: MediaQuery.of(context).size.width < 360 ? 22 : 28,
+              fontSize: MediaQuery.of(context).size.width < 360 ? 24 : 30,
               fontWeight: FontWeight.bold,
               color: theme.textTheme.bodyLarge?.color,
             ),
@@ -229,42 +255,74 @@ class ChatBotScreenState extends State<ChatBotScreen> {
             ),
           ),
           const SizedBox(height: 36),
-          Text(
-            'Sugestões',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.4),
-              letterSpacing: 0.5,
-            ),
+          Row(
+            children: [
+              Icon(Icons.auto_awesome_rounded,
+                  size: 15, color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.4)),
+              const SizedBox(width: 6),
+              Text(
+                'SUGESTÕES',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.4),
+                  letterSpacing: 1,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           ...List.generate(_suggestions.length, (i) => _buildSuggestionChip(theme, _suggestions[i])),
         ],
       ),
     );
   }
 
-  static const _chipRadius = BorderRadius.all(Radius.circular(14));
+  static const _chipRadius = BorderRadius.all(Radius.circular(16));
 
-  Widget _buildSuggestionChip(ThemeData theme, String text) {
+  Widget _buildSuggestionChip(ThemeData theme, ({IconData icon, String text}) item) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: InkWell(
-        onTap: () {
-          _controller.text = text;
-          _sendMessage();
-        },
+      child: Material(
+        color: theme.cardColor,
         borderRadius: _chipRadius,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            borderRadius: _chipRadius,
-            border: Border.all(color: theme.dividerColor.withValues(alpha: 0.2)),
-            color: theme.cardColor,
+        child: InkWell(
+          onTap: () {
+            _controller.text = item.text;
+            _sendMessage();
+          },
+          borderRadius: _chipRadius,
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: _chipRadius,
+              border: Border.all(color: theme.dividerColor.withValues(alpha: 0.25)),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: _accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(item.icon, size: 19, color: _accent),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    item.text,
+                    style: TextStyle(fontSize: 15, color: theme.textTheme.bodyLarge?.color),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(Icons.arrow_outward_rounded,
+                    size: 16,
+                    color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.3)),
+              ],
+            ),
           ),
-          child: Text(text, style: TextStyle(fontSize: 15, color: theme.textTheme.bodyLarge?.color)),
         ),
       ),
     );
@@ -287,21 +345,23 @@ class ChatBotScreenState extends State<ChatBotScreen> {
   }
 
   Widget _buildMessageRow(ThemeData theme, _ChatMessage msg, int index) {
-    // Typing indicator
+    // Indicador de "a escrever".
     if (!msg.isUser && msg.text.isEmpty && _isSending) {
       return RepaintBoundary(
         child: Align(
           alignment: Alignment.centerLeft,
           child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            margin: const EdgeInsets.symmetric(vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             decoration: BoxDecoration(
               color: theme.cardColor,
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-                bottomRight: Radius.circular(12),
+                topLeft: Radius.circular(4),
+                topRight: Radius.circular(18),
+                bottomLeft: Radius.circular(18),
+                bottomRight: Radius.circular(18),
               ),
+              border: Border.all(color: theme.dividerColor.withValues(alpha: 0.18)),
             ),
             child: const _TypingIndicator(),
           ),
@@ -310,130 +370,140 @@ class ChatBotScreenState extends State<ChatBotScreen> {
     }
 
     final iconColor = theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.3) ?? Colors.grey;
+    final isUser = msg.isUser;
 
-    return RepaintBoundary(
-      child: Column(
-      crossAxisAlignment: msg.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-      children: [
-        // Balão da mensagem
-        Align(
-          alignment: msg.isUser ? Alignment.centerRight : Alignment.centerLeft,
-          child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 4),
-            padding: const EdgeInsets.all(12),
-            constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.78),
-            decoration: BoxDecoration(
-              color: msg.isUser ? Colors.yellow.shade700 : theme.cardColor,
-              borderRadius: BorderRadius.only(
-                topLeft: const Radius.circular(12),
-                topRight: const Radius.circular(12),
-                bottomLeft: Radius.circular(msg.isUser ? 12 : 0),
-                bottomRight: Radius.circular(msg.isUser ? 0 : 12),
-              ),
-            ),
-            child: msg.isUser
-                ? Text(msg.text, style: const TextStyle(color: Colors.white, fontSize: 16))
-                : MarkdownBody(
-                    data: msg.text,
-                    styleSheet: MarkdownStyleSheet(
-                      p: TextStyle(color: theme.textTheme.bodyMedium?.color, fontSize: 16),
-                      strong: const TextStyle(fontWeight: FontWeight.bold),
-                      blockSpacing: 8,
-                      a: TextStyle(
-                        color: Colors.yellow.shade700,
-                        decoration: TextDecoration.underline,
-                        decorationColor: Colors.yellow.shade700,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    onTapLink: (text, href, title) {
-                      if (href != null && href.startsWith('bible://')) {
-                        final safePath = href.replaceFirst('bible://', '');
-                        final parts = safePath.split('/');
-                        if (parts.length >= 3) {
-                          final book = Uri.decodeComponent(parts[0]);
-                          final chapter = int.tryParse(parts[1]) ?? 1;
-                          final verseString = parts[2].split('-')[0];
-                          final verse = int.tryParse(verseString) ?? 1;
-                          if (widget.onNavigateToVerse != null) {
-                            widget.onNavigateToVerse!(book, chapter, verse);
-                          }
-                        }
-                      }
-                    },
-                  ),
-          ),
+    // Balão da mensagem.
+    final bubble = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.74),
+      decoration: BoxDecoration(
+        color: isUser ? _accent : theme.cardColor,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(isUser ? 18 : 4),
+          topRight: Radius.circular(isUser ? 4 : 18),
+          bottomLeft: const Radius.circular(18),
+          bottomRight: const Radius.circular(18),
         ),
-
-        // Ações fora do balão (copiar / editar / guardar como nota)
-        if (msg.text.isNotEmpty)
-          Padding(
-            padding: EdgeInsets.only(
-              left: msg.isUser ? 0 : 4,
-              right: msg.isUser ? 4 : 0,
-              bottom: 6,
+        border: isUser ? null : Border.all(color: theme.dividerColor.withValues(alpha: 0.18)),
+      ),
+      child: isUser
+          ? Text(msg.text, style: const TextStyle(color: Colors.white, fontSize: 16, height: 1.4))
+          : MarkdownBody(
+              data: msg.text,
+              styleSheet: MarkdownStyleSheet(
+                p: TextStyle(color: theme.textTheme.bodyMedium?.color, fontSize: 16, height: 1.45),
+                strong: const TextStyle(fontWeight: FontWeight.bold),
+                blockSpacing: 8,
+                a: TextStyle(
+                  color: _accent,
+                  decoration: TextDecoration.underline,
+                  decorationColor: _accent,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              onTapLink: (text, href, title) {
+                if (href != null && href.startsWith('bible://')) {
+                  final safePath = href.replaceFirst('bible://', '');
+                  final parts = safePath.split('/');
+                  if (parts.length >= 3) {
+                    final book = Uri.decodeComponent(parts[0]);
+                    final chapter = int.tryParse(parts[1]) ?? 1;
+                    final verseString = parts[2].split('-')[0];
+                    final verse = int.tryParse(verseString) ?? 1;
+                    if (widget.onNavigateToVerse != null) {
+                      widget.onNavigateToVerse!(book, chapter, verse);
+                    }
+                  }
+                }
+              },
             ),
+    );
+
+    // Ações fora do balão (copiar / editar / guardar como nota).
+    final actions = msg.text.isEmpty
+        ? const SizedBox.shrink()
+        : Padding(
+            padding: const EdgeInsets.only(top: 2, bottom: 4),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Copiar
                 _actionIcon(Icons.content_copy_rounded, iconColor, () => _copyMessage(msg.text)),
-                if (msg.isUser && !_isSending) ...[
+                if (isUser && !_isSending) ...[
                   const SizedBox(width: 2),
-                  // Editar (só mensagens do user)
-                  _actionIcon(Icons.edit_outlined, iconColor, () => _editMessage(index)),
+                  _actionIcon(Icons.edit_rounded, iconColor, () => _editMessage(index)),
                 ],
-                if (!msg.isUser) ...[
+                if (!isUser) ...[
                   const SizedBox(width: 2),
-                  // Guardar como nota (só respostas da IA)
-                  _actionIcon(Icons.bookmark_add_outlined, iconColor, () => _saveMessageAsNote(msg.text)),
+                  _actionIcon(Icons.bookmark_add_rounded, iconColor, () => _saveMessageAsNote(msg.text)),
                 ],
               ],
             ),
-          ),
+          );
 
-        // Sugestões de continuação (só sob a última resposta da IA)
-        if (!msg.isUser &&
+    final followUps = (!isUser &&
             msg.suggestions.isNotEmpty &&
             index == _messages.length - 1 &&
             !_isSending)
-          _buildFollowUpSuggestions(theme, msg.suggestions),
-      ],
+        ? _buildFollowUpSuggestions(theme, msg.suggestions)
+        : const SizedBox.shrink();
+
+    if (isUser) {
+      return RepaintBoundary(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [bubble, actions],
+          ),
+        ),
+      );
+    }
+
+    // Mensagem da IA: balão e ações alinhados à esquerda.
+    return RepaintBoundary(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [bubble, actions, followUps],
+        ),
       ),
     );
   }
 
   Widget _buildFollowUpSuggestions(ThemeData theme, List<String> suggestions) {
-    final accent = Colors.yellow.shade700;
+    final accent = _accent;
     return Padding(
-      padding: const EdgeInsets.only(left: 4, top: 2, bottom: 8, right: 24),
+      padding: const EdgeInsets.only(top: 6, bottom: 6),
       child: Wrap(
         spacing: 8,
         runSpacing: 8,
         children: suggestions.map((s) {
-          return InkWell(
-            onTap: () => sendPrompt(s),
+          return Material(
+            color: accent.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(20),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: accent.withValues(alpha: 0.5)),
-                color: accent.withValues(alpha: 0.08),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.auto_awesome, size: 14, color: accent),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      s,
-                      style: TextStyle(fontSize: 13.5, color: theme.textTheme.bodyLarge?.color),
+            child: InkWell(
+              onTap: () => sendPrompt(s),
+              borderRadius: BorderRadius.circular(20),
+              child: Ink(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: accent.withValues(alpha: 0.4)),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_rounded, size: 15, color: accent),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        s,
+                        style: TextStyle(fontSize: 13.5, color: theme.textTheme.bodyLarge?.color),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           );
@@ -525,7 +595,7 @@ class ChatBotScreenState extends State<ChatBotScreen> {
                         height: 22,
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
-                          color: Colors.yellow.shade700,
+                          color: _accent,
                         ),
                       ),
                     ),
@@ -534,7 +604,7 @@ class ChatBotScreenState extends State<ChatBotScreen> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: Colors.yellow.shade700,
+                      color: _accent,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: IconButton(
@@ -631,74 +701,232 @@ class ChatBotScreenState extends State<ChatBotScreen> {
   /// Abre a lista de conversas guardadas.
   Future<void> _openHistory() async {
     final theme = Theme.of(context);
-    final conversations = await _supabaseService.getConversations();
+    var conversations = await _supabaseService.getConversations();
     if (!mounted) return;
 
     await showModalBottomSheet(
       context: context,
-      backgroundColor: theme.scaffoldBackgroundColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-                  child: Text(
-                    'Conversas',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: theme.textTheme.bodyLarge?.color,
-                    ),
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            return DraggableScrollableSheet(
+              initialChildSize: 0.62,
+              minChildSize: 0.4,
+              maxChildSize: 0.92,
+              expand: false,
+              builder: (_, scrollController) {
+                return Container(
+                  decoration: BoxDecoration(
+                    color: theme.scaffoldBackgroundColor,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                   ),
-                ),
-                if (conversations.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.all(20),
-                    child: Text('Ainda não tens conversas guardadas.'),
-                  )
-                else
-                  Flexible(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: conversations.length,
-                      itemBuilder: (_, i) {
-                        final c = conversations[i];
-                        return ListTile(
-                          leading: Icon(Icons.chat_bubble_outline, color: Colors.yellow.shade700),
-                          title: Text(
-                            c.title?.isNotEmpty == true ? c.title! : 'Conversa',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          trailing: IconButton(
-                            icon: Icon(Icons.delete_outline, color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.4)),
-                            onPressed: () async {
-                              await _supabaseService.deleteConversation(c.id);
-                              if (_conversationId == c.id) _startNewConversation();
-                              if (sheetContext.mounted) Navigator.pop(sheetContext);
-                            },
-                          ),
-                          onTap: () {
-                            Navigator.pop(sheetContext);
-                            _loadConversation(c.id);
-                          },
-                        );
-                      },
-                    ),
+                  child: Column(
+                    children: [
+                      // Pega de arrastar.
+                      Container(
+                        margin: const EdgeInsets.only(top: 10, bottom: 4),
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: theme.dividerColor.withValues(alpha: 0.4),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      // Cabeçalho com título + botão "Nova".
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 8, 12, 8),
+                        child: Row(
+                          children: [
+                            Icon(Icons.history_rounded, size: 20, color: _accent),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Conversas',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: theme.textTheme.bodyLarge?.color,
+                              ),
+                            ),
+                            const Spacer(),
+                            TextButton.icon(
+                              onPressed: () {
+                                Navigator.pop(sheetContext);
+                                _startNewConversation();
+                              },
+                              icon: const Icon(Icons.add_comment_rounded, size: 18),
+                              label: const Text('Nova'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: _accent,
+                                backgroundColor: _accent.withValues(alpha: 0.1),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Expanded(
+                        child: conversations.isEmpty
+                            ? _historyEmptyState(theme)
+                            : ListView.separated(
+                                controller: scrollController,
+                                padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+                                itemCount: conversations.length,
+                                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                                itemBuilder: (_, i) {
+                                  final c = conversations[i];
+                                  return _conversationCard(
+                                    theme,
+                                    c,
+                                    active: c.id == _conversationId,
+                                    onTap: () {
+                                      Navigator.pop(sheetContext);
+                                      _loadConversation(c.id);
+                                    },
+                                    onDelete: () async {
+                                      final ok = await _confirmDelete(sheetContext);
+                                      if (ok != true) return;
+                                      await _supabaseService.deleteConversation(c.id);
+                                      if (_conversationId == c.id) _startNewConversation();
+                                      setSheetState(() {
+                                        conversations = conversations
+                                            .where((x) => x.id != c.id)
+                                            .toList();
+                                      });
+                                    },
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
                   ),
-              ],
-            ),
-          ),
+                );
+              },
+            );
+          },
         );
       },
+    );
+  }
+
+  Widget _historyEmptyState(ThemeData theme) {
+    final faint = theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.35);
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.forum_outlined, size: 48, color: faint),
+          const SizedBox(height: 12),
+          Text(
+            'Ainda não tens conversas guardadas.',
+            style: TextStyle(color: faint, fontSize: 14),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _conversationCard(
+    ThemeData theme,
+    ChatConversation c, {
+    required bool active,
+    required VoidCallback onTap,
+    required VoidCallback onDelete,
+  }) {
+    final title = c.title?.isNotEmpty == true ? c.title! : 'Conversa';
+    final time = _relativeTime(c.updatedAt);
+    final radius = BorderRadius.circular(16);
+
+    return Material(
+      color: active ? _accent.withValues(alpha: 0.1) : theme.cardColor,
+      borderRadius: radius,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: radius,
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: radius,
+            border: Border.all(
+              color: active ? _accent.withValues(alpha: 0.6) : theme.dividerColor.withValues(alpha: 0.2),
+            ),
+          ),
+          padding: const EdgeInsets.fromLTRB(12, 12, 6, 12),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: _accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Icon(Icons.chat_bubble_rounded, size: 18, color: _accent),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: theme.textTheme.bodyLarge?.color,
+                      ),
+                    ),
+                    if (time.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        time,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.45),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: Icon(Icons.delete_outline_rounded,
+                    size: 20, color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.4)),
+                tooltip: 'Apagar',
+                onPressed: onDelete,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<bool?> _confirmDelete(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Apagar conversa?'),
+        content: const Text('Esta ação não pode ser desfeita.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red.shade400),
+            child: const Text('Apagar'),
+          ),
+        ],
+      ),
     );
   }
 
