@@ -66,6 +66,17 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // Continua na aba IA a conversa iniciada na vista de estudo (mesmo histórico).
+  void _openConversationInTab(String conversationId) {
+    setState(() {
+      _currentIndex = 3; // Index do Chatbot
+    });
+
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _chatBotKey.currentState?.loadConversation(conversationId);
+    });
+  }
+
   // Cor do NavigationBar: só usa tema bíblico na aba da Bíblia
   Color get _navBarColor {
     final isAppDark = Theme.of(context).brightness == Brightness.dark;
@@ -125,6 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
             currentTheme: _bibleTheme,
             onThemeChanged: _updateBibleTheme,
             onAskAI: _switchToChatbot,
+            onContinueConversation: _openConversationInTab,
           ),
           
           // 2: Planos

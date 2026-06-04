@@ -28,12 +28,16 @@ class BibleReaderScreen extends StatefulWidget {
   final ReadingTheme currentTheme;
   final Function(ReadingTheme) onThemeChanged;
   final Function(String)? onAskAI;
+  // Abre a aba IA em ecrã completo, carregando a conversa indicada (continuação
+  // da vista de estudo).
+  final void Function(String conversationId)? onContinueConversation;
 
   const BibleReaderScreen({
     super.key,
     required this.currentTheme,
     required this.onThemeChanged,
     this.onAskAI,
+    this.onContinueConversation,
   });
 
   @override
@@ -497,19 +501,76 @@ class BibleReaderScreenState extends State<BibleReaderScreen> {
         : '$_selectedBook $_selectedChapter:$firstVerse-$lastVerse';
     final prompt = 'Explique $reference: "$text"';
 
+    final firstIndex = sorted.first;
+    final firstVerseText = _verses[firstIndex]['text'] as String? ?? text;
+
     if (mounted) {
       setState(() => _selectedVerses.clear());
-      if (widget.onAskAI != null) {
-        widget.onAskAI!(prompt);
-      } else {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ChatBotScreen(initialPrompt: prompt),
+      _openStudySheet(
+        prompt: prompt,
+        book: _selectedBook,
+        chapter: _selectedChapter,
+        verse: firstVerse,
+        verseText: firstVerseText,
+      );
+    }
+  }
+
+  /// Abre a vista de estudo (painel sobre a Bíblia) com o chat de IA embutido.
+  /// A Bíblia fica visível atrás. O botão "Abrir completo" transfere a conversa
+  /// para a aba IA em ecrã inteiro, mantendo todo o histórico.
+  Future<void> _openStudySheet({
+    required String prompt,
+    required String book,
+    required int chapter,
+    required int verse,
+    required String verseText,
+  }) async {
+    final chatKey = GlobalKey<ChatBotScreenState>();
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final h = MediaQuery.of(sheetContext).size.height;
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(sheetContext).viewInsets.bottom),
+          child: SizedBox(
+            height: h * 0.78,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(sheetContext).scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: ChatBotScreen(
+                key: chatKey,
+                embedded: true,
+                initialPrompt: prompt,
+                sourceBook: book,
+                sourceChapter: chapter,
+                sourceVerse: verse,
+                sourceVerseText: verseText,
+                onNavigateToVerse: (b, c, v) {
+                  if (sheetContext.mounted) Navigator.pop(sheetContext);
+                  jumpToVerse(b, c, v);
+                },
+                onOpenFull: () async {
+                  final state = chatKey.currentState;
+                  await state?.ensureSaved();
+                  final id = state?.conversationId;
+                  if (sheetContext.mounted) Navigator.pop(sheetContext);
+                  if (id != null && widget.onContinueConversation != null) {
+                    widget.onContinueConversation!(id);
+                  }
+                },
+              ),
+            ),
           ),
         );
-      }
-    }
+      },
+    );
   }
 
   void _handleNoteTapInMenu() {
