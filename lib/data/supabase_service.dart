@@ -134,6 +134,123 @@ class SupabaseService {
   }
 
   // ===========================================================================
+  // CHAT CONVERSATIONS (schema normalizado: chat_conversations + chat_messages)
+  // ===========================================================================
+
+  /// Lista as conversas do utilizador (só metadados, para a lista ser leve).
+  Future<List<ChatConversation>> getConversations({int limit = 50}) async {
+    try {
+      if (_userId == null) return [];
+      final response = await _client
+          .from('chat_conversations')
+          .select('id, title, updated_at')
+          .eq('user_id', _userId!)
+          .order('updated_at', ascending: false)
+          .limit(limit);
+      return (response as List)
+          .map((e) => ChatConversation.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      debugPrint('Error fetching conversations: $e');
+      return [];
+    }
+  }
+
+  /// Carrega uma conversa completa (metadados + mensagens, por ordem cronológica).
+  Future<ChatConversation?> getConversation(String id) async {
+    try {
+      if (_userId == null) return null;
+      final meta = await _client
+          .from('chat_conversations')
+          .select()
+          .eq('id', id)
+          .eq('user_id', _userId!)
+          .maybeSingle();
+      if (meta == null) return null;
+
+      final rows = await _client
+          .from('chat_messages')
+          .select('role, content')
+          .eq('conversation_id', id)
+          .order('created_at', ascending: true);
+      final messages = (rows as List)
+          .map((e) => ChatTurn.fromJson(e as Map<String, dynamic>))
+          .toList();
+
+      return ChatConversation.fromJson(meta, messages: messages);
+    } catch (e) {
+      debugPrint('Error fetching conversation: $e');
+      return null;
+    }
+  }
+
+  /// Cria uma conversa nova e devolve o id gerado.
+  Future<String?> createConversation(String title) async {
+    try {
+      if (_userId == null) return null;
+      final response = await _client
+          .from('chat_conversations')
+          .insert({'user_id': _userId, 'title': title})
+          .select('id')
+          .single();
+      return response['id'] as String?;
+    } catch (e) {
+      debugPrint('Error creating conversation: $e');
+      return null;
+    }
+  }
+
+  /// Actualiza o título e o updated_at de uma conversa existente.
+  Future<void> touchConversation(String id, String title) async {
+    try {
+      if (_userId == null) return;
+      await _client
+          .from('chat_conversations')
+          .update({'title': title, 'updated_at': DateTime.now().toIso8601String()})
+          .eq('id', id)
+          .eq('user_id', _userId!);
+    } catch (e) {
+      debugPrint('Error updating conversation: $e');
+    }
+  }
+
+  /// Insere novas mensagens numa conversa (append incremental).
+  Future<void> appendMessages(String conversationId, List<ChatTurn> turns) async {
+    if (turns.isEmpty) return;
+    try {
+      await _client
+          .from('chat_messages')
+          .insert(turns.map((t) => t.toInsert(conversationId)).toList());
+    } catch (e) {
+      debugPrint('Error appending messages: $e');
+    }
+  }
+
+  /// Substitui todas as mensagens de uma conversa (usado após edições).
+  Future<void> replaceMessages(String conversationId, List<ChatTurn> turns) async {
+    try {
+      await _client.from('chat_messages').delete().eq('conversation_id', conversationId);
+      await appendMessages(conversationId, turns);
+    } catch (e) {
+      debugPrint('Error replacing messages: $e');
+    }
+  }
+
+  Future<void> deleteConversation(String id) async {
+    try {
+      if (_userId == null) return;
+      // As mensagens são removidas em cascata (FK on delete cascade).
+      await _client
+          .from('chat_conversations')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', _userId!);
+    } catch (e) {
+      debugPrint('Error deleting conversation: $e');
+    }
+  }
+
+  // ===========================================================================
   // PROFILE
   // ===========================================================================
 

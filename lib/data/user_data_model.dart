@@ -104,3 +104,47 @@ class UserNote {
     }
   }
 }
+
+/// Uma mensagem de uma conversa do chat bíblico (linha em chat_messages).
+class ChatTurn {
+  final String role; // 'user' | 'assistant' | 'system'
+  final String content;
+
+  ChatTurn({required this.role, required this.content});
+
+  factory ChatTurn.fromJson(Map<String, dynamic> json) =>
+      ChatTurn(role: json['role'] as String? ?? 'user', content: json['content'] as String? ?? '');
+
+  /// Payload para inserir em chat_messages (sem id/created_at, gerados na BD).
+  Map<String, dynamic> toInsert(String conversationId) => {
+        'conversation_id': conversationId,
+        'role': role,
+        'content': content,
+      };
+}
+
+/// Uma conversa guardada do chat bíblico (linha em chat_conversations).
+/// As mensagens vivem em chat_messages e são preenchidas ao carregar uma conversa.
+class ChatConversation {
+  final String id;
+  final String? title;
+  final List<ChatTurn> messages;
+  final DateTime? updatedAt;
+
+  ChatConversation({
+    required this.id,
+    this.title,
+    this.messages = const [],
+    this.updatedAt,
+  });
+
+  /// Constrói a partir da linha de metadados (sem mensagens).
+  factory ChatConversation.fromJson(Map<String, dynamic> json, {List<ChatTurn> messages = const []}) {
+    return ChatConversation(
+      id: json['id'] as String,
+      title: json['title'] as String?,
+      messages: messages,
+      updatedAt: json['updated_at'] != null ? DateTime.tryParse(json['updated_at'] as String) : null,
+    );
+  }
+}
