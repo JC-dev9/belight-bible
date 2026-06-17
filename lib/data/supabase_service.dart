@@ -271,18 +271,36 @@ class SupabaseService {
     }
   }
 
-  /// Atualiza o nome e/ou avatar do perfil.
-  Future<void> updateProfile({String? fullName, String? avatarUrl}) async {
+  /// Atualiza o nome e/ou avatar do perfil. Devolve true se bem-sucedido.
+  Future<bool> updateProfile({String? fullName, String? avatarUrl}) async {
     try {
-      if (_userId == null) return;
+      if (_userId == null) return false;
       final data = <String, dynamic>{
         'updated_at': DateTime.now().toIso8601String(),
       };
       if (fullName != null) data['full_name'] = fullName;
       if (avatarUrl != null) data['avatar_url'] = avatarUrl;
       await _client.from('profiles').update(data).eq('id', _userId!);
+      return true;
     } catch (e) {
       debugPrint('Error updating profile: $e');
+      return false;
+    }
+  }
+
+  // ===========================================================================
+  // ACCOUNT DELETION
+  // ===========================================================================
+
+  /// Apaga todos os dados e o registo de autenticação via RPC SECURITY DEFINER.
+  Future<bool> deleteAccount() async {
+    try {
+      if (_userId == null) return false;
+      await _client.rpc('delete_my_account');
+      return true;
+    } catch (e) {
+      debugPrint('Error deleting account: $e');
+      return false;
     }
   }
 
