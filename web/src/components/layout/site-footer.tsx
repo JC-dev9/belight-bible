@@ -1,16 +1,21 @@
 import Link from "next/link";
 
-import { Container } from "@/components/ui/container";
 import { footerNav, mainNav, site } from "@/lib/site";
+import { Container } from "@/components/ui/container";
 
-/** Rodapé global com navegação e ligações legais. */
+import { Logo } from "./logo";
+
+/** Rodapé global com marca, navegação e ligações legais. */
 export function SiteFooter() {
   return (
     <footer className="mt-auto border-t border-border">
-      <Container className="flex flex-col gap-4 py-8 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-muted-foreground">
-          © {new Date().getFullYear()} {site.name}
-        </p>
+      <Container className="flex flex-col gap-6 py-10 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2">
+          <Logo />
+          <p className="text-sm text-muted-foreground">
+            © {new Date().getFullYear()} {site.name}. Todos os direitos reservados.
+          </p>
+        </div>
         <nav className="flex flex-wrap gap-x-6 gap-y-2">
           {[...mainNav, ...footerNav].map((item) => (
             <Link
