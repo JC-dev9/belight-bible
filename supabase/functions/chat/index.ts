@@ -8,7 +8,68 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "
 
 const DAILY_LIMIT = 50;
 
+// Limites de input — protegem contra abuso de custo e prompt injection.
+const MAX_MESSAGES = 20; // nº máx. de mensagens aceites por pedido
+const MAX_MESSAGE_CHARS = 4000; // tamanho máx. de cada mensagem
+const MAX_TOTAL_CHARS = 16000; // tamanho máx. agregado do histórico
+const ALLOWED_ROLES = new Set(["user", "assistant"]);
+
+// Timeout das chamadas aos modelos — evita funções penduradas.
+const LLM_TIMEOUT_MS = 25_000;
+
 const SUGGEST_DELIMITER = "###PERGUNTAS###";
+
+type ChatMessage = { role: string; content: string };
+
+/// Valida e sanitiza o array de mensagens vindo do cliente.
+/// Rejeita roles não permitidos (em especial "system", que só o servidor
+/// define), conteúdos vazios ou demasiado longos, e payloads excessivos.
+function validateMessages(
+  raw: unknown,
+): { messages: ChatMessage[] } | { error: string } {
+  if (!Array.isArray(raw) || raw.length === 0) {
+    return { error: "É necessário um array 'messages' não vazio." };
+  }
+  if (raw.length > MAX_MESSAGES) {
+    return { error: `Demasiadas mensagens (máximo ${MAX_MESSAGES}).` };
+  }
+
+  const messages: ChatMessage[] = [];
+  let totalChars = 0;
+
+  for (const item of raw) {
+    if (typeof item !== "object" || item === null) {
+      return { error: "Cada mensagem tem de ser um objeto." };
+    }
+    const role = (item as Record<string, unknown>).role;
+    const content = (item as Record<string, unknown>).content;
+
+    if (typeof role !== "string" || !ALLOWED_ROLES.has(role)) {
+      return {
+        error: "Cada mensagem tem de ter role 'user' ou 'assistant'.",
+      };
+    }
+    if (typeof content !== "string") {
+      return { error: "O conteúdo de cada mensagem tem de ser texto." };
+    }
+    const trimmed = content.trim();
+    if (trimmed.length === 0) {
+      return { error: "As mensagens não podem ser vazias." };
+    }
+    if (trimmed.length > MAX_MESSAGE_CHARS) {
+      return {
+        error: `Mensagem demasiado longa (máximo ${MAX_MESSAGE_CHARS} caracteres).`,
+      };
+    }
+    totalChars += trimmed.length;
+    if (totalChars > MAX_TOTAL_CHARS) {
+      return { error: "Histórico de conversa demasiado longo." };
+    }
+    messages.push({ role, content: trimmed });
+  }
+
+  return { messages };
+}
 
 const BASE_SYSTEM_PROMPT = `Você é um guia de estudo bíblico — parte erudito, parte conselheiro pastoral. Domina as Escrituras, a teologia cristã, o contexto histórico-cultural e as línguas originais (Hebraico e Grego). Acompanha quem quer compreender e viver a Palavra.
 
@@ -98,10 +159,19 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: "Sessão inválida" }, 401);
     }
 
-    const { messages } = await req.json();
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return jsonResponse({ error: "messages array is required" }, 400);
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return jsonResponse({ error: "Pedido inválido — JSON malformado." }, 400);
     }
+    const validated = validateMessages(
+      (body as Record<string, unknown>)?.messages,
+    );
+    if ("error" in validated) {
+      return jsonResponse({ error: validated.error }, 400);
+    }
+    const { messages } = validated;
 
     const { data: usage, error: usageError } = await supabase.rpc(
       "increment_chat_usage",
@@ -168,6 +238,7 @@ async function callGroq(
 
     const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
+      signal: AbortSignal.timeout(LLM_TIMEOUT_MS),
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${GROQ_API_KEY}`,
@@ -210,6 +281,7 @@ async function callGemini(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
+        signal: AbortSignal.timeout(LLM_TIMEOUT_MS),
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           system_instruction: { parts: [{ text: systemPrompt }] },
