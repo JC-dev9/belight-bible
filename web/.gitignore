@@ -24,6 +24,9 @@
 .DS_Store
 *.pem
 
+# backup local de imagens originais (não versionar)
+/public/_raw/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
