@@ -2,48 +2,123 @@
 
 /*
  * Tokens da marca Belight Bible.
- * Fonte única de cores/raios: alterar aqui propaga para todo o site.
- * As variáveis ficam expostas como utilitários Tailwind via @theme inline
- * (ex.: --color-brand -> bg-brand / text-brand).
+ * Fonte única de cores/raios/animações: alterar aqui propaga para todo o site.
+ *
+ * Tema: por omissão segue o sistema (prefers-color-scheme). O toggle no header
+ * força um tema escrevendo data-theme="light|dark" no <html> (persistido em
+ * localStorage), com prioridade sobre a preferência do sistema.
  */
 :root {
-  --background: #fbfaf7; /* pergaminho claro */
-  --foreground: #1c1917; /* tinta */
-  --muted: #f2efe9;
-  --muted-foreground: #6b6862;
-  --border: #e7e2d8;
+  --background: #fcfbf8; /* papel quente */
+  --foreground: #1a1715; /* tinta */
+  --card: #ffffff;
+  --muted: #f3efe7;
+  --muted-foreground: #6f6a61;
+  --border: #e8e2d6;
   --brand: #c8902a; /* dourado "be light" */
   --brand-foreground: #ffffff;
-  --radius: 0.75rem;
+  --radius: 0.85rem;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #14110e;
-    --foreground: #f4f1ea;
-    --muted: #1f1b16;
-    --muted-foreground: #a8a298;
-    --border: #2c2620;
+  :root:not([data-theme="light"]) {
+    --background: #14110d;
+    --foreground: #f3efe7;
+    --card: #1b1712;
+    --muted: #201c16;
+    --muted-foreground: #a59d90;
+    --border: #2d2720;
     --brand: #e0a838;
-    --brand-foreground: #1c1917;
+    --brand-foreground: #1a1715;
   }
+}
+
+[data-theme="dark"] {
+  --background: #14110d;
+  --foreground: #f3efe7;
+  --card: #1b1712;
+  --muted: #201c16;
+  --muted-foreground: #a59d90;
+  --border: #2d2720;
+  --brand: #e0a838;
+  --brand-foreground: #1a1715;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
   --radius-base: var(--radius);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-fraunces), Georgia, "Times New Roman", serif;
+
+  /*
+   * Animações registadas como utilities (animate-rise / animate-float /
+   * animate-glow). Performance: animam APENAS opacity e transform (compostas
+   * pela GPU) — nunca layout/paint — para 60fps sem bloquear a main thread.
+   */
+  --animate-rise: rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-glow: glow 9s ease-in-out infinite;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-0.5rem);
+  }
+}
+
+@keyframes glow {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: translate(-50%, 0) scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: translate(-50%, 0) scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise,
+  .animate-float,
+  .animate-glow {
+    animation: none;
+  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Transição suave de cores ao alternar o tema (não afeta animações de layout). */
+:root {
+  --theme-transition: background-color 0.3s ease, border-color 0.3s ease,
+    color 0.3s ease;
 }
