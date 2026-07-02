@@ -19,7 +19,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   ReadingTheme _bibleTheme = ReadingTheme.light;
-  
+  // true = leitor segue o tema global da app; false = o user fixou um tema.
+  bool _bibleThemeAuto = true;
+
   final GlobalKey<ChatBotScreenState> _chatBotKey = GlobalKey<ChatBotScreenState>();
   final GlobalKey<BibleReaderScreenState> _bibleKey = GlobalKey<BibleReaderScreenState>();
 
@@ -31,18 +33,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _loadSavedBibleTheme() {
     final box = Hive.box(HiveKeys.settingsBox);
-    final saved = box.get(HiveKeys.bibleTheme, defaultValue: 'light');
-    setState(() {
-      _bibleTheme = ReadingTheme.values.firstWhere(
-        (t) => t.name == saved,
-        orElse: () => ReadingTheme.light,
-      );
-    });
+    final saved = box.get(HiveKeys.bibleTheme);
+    // Sem chave gravada => o user nunca escolheu: leitor segue o tema da app.
+    // O tema efectivo é resolvido em build() a partir do brilho actual.
+    if (saved == null) {
+      _bibleThemeAuto = true;
+      return;
+    }
+    _bibleThemeAuto = false;
+    _bibleTheme = ReadingTheme.values.firstWhere(
+      (t) => t.name == saved,
+      orElse: () => ReadingTheme.light,
+    );
   }
 
   void _updateBibleTheme(ReadingTheme newTheme) {
-    setState(() => _bibleTheme = newTheme);
-    // Persistir no Hive
+    // Escolha explícita do user: fixa o tema e deixa de seguir a app.
+    setState(() {
+      _bibleTheme = newTheme;
+      _bibleThemeAuto = false;
+    });
     Hive.box(HiveKeys.settingsBox).put(HiveKeys.bibleTheme, newTheme.name);
   }
 
@@ -111,6 +121,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final primaryColor = Colors.yellow.shade800;
     final isSystemDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Modo automático: o leitor acompanha o tema da app (claro/escuro).
+    // O tema "Papel" (sépia) só existe como escolha explícita do user.
+    if (_bibleThemeAuto) {
+      _bibleTheme = isSystemDark ? ReadingTheme.dark : ReadingTheme.light;
+    }
 
     // Ajusta Status Bar baseado na aba atual
     final bool useLightIcons = 
