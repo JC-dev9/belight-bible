@@ -273,6 +273,19 @@ class ChatBotScreenState extends State<ChatBotScreen> {
           ),
           const SizedBox(height: 14),
           ...List.generate(_suggestions.length, (i) => _buildSuggestionChip(theme, _suggestions[i])),
+          const SizedBox(height: 20),
+          Center(
+            child: Text(
+              'A IA pode cometer erros. Confirme sempre com as Escrituras.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 11.5,
+                height: 1.4,
+                color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.4),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
         ],
       ),
     );
